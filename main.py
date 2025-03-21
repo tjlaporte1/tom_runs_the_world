@@ -64,9 +64,8 @@ activities.elev_low = (activities.elev_low * 3.28084).round(2)
 activities_df = pd.DataFrame(activities)
 
 # get distinct gear id's
-gear_list = activities_df['gear_id'].unique()
-
-gear_list = gear_list[~pd.isnull(gear_list)]
+gear_id_list = activities_df['gear_id'].unique()
+gear_id_list = gear_id_list[~pd.isnull(gear_id_list)]
 
 def get_gear_data(gear_list):
     '''This function gets gear data from Strava API
@@ -103,7 +102,7 @@ df['elapsed_time'] = pd.to_datetime(df['elapsed_time'], unit='s').dt.strftime('%
 
 # convert start_date and start_date_local to datetime
 df['start_date'] = pd.to_datetime(df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S')
-df['start_date_local'] = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S')
+df['start_date_local'] = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p')
 
 # add start time for analysis and in am/pm format
 df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.strftime('%H:%M:%S')
@@ -118,26 +117,33 @@ df['year'] = pd.to_datetime(df['start_date_local']).dt.year
 # max date
 max_date = df['start_date_local'].max()
 
-# TODO create distict activity type list
-# TODO create distinct gear type list
+# TODO test these filters
+# distict activity type list
+act_type_filter = df['type'].value_counts().index.tolist()
+act_type_filter.insert(0, 'All')
 # TODO create distinct year list
+year_filter = sorted(df['year'].unique().tolist(), reverse=True)
+year_filter.insert(0, 'All')
+year_filter.insert(1, 'Rolling 12 mo')
 # TODO create rolling 12 mo variable
 
 ##### STREAMLIT DASHBOARD #####
-# TODO - create streamlit dashboard
-st.title('Tom Runs The World')
-st.subheader('Strava Data Analysis')
-st.caption('Data as of: ' + max_date)
-st.button('Refresh Data')
-st.divider()
-with st.sidebar:
-  st.subheader('Filters')
-  st.segmented_control('Activity Type', ['All', 'distinct activity types'])
-  st.selectbox('Years', [2025, 2024, 'All', 'Rolling 12 mo'])
+page_head = st.container()
+page_head.title('Tom Runs The World')
+page_head.subheader('Strava Data Analysis')
+page_head.caption('Data as of: ' + max_date)
+page_head.button('Refresh Data')
+page_head.divider()
+
+filter_col1, filter_col2 = st.columns([7,1])
+with filter_col1:
+    act_type_selection = st.segmented_control('Activity Type', act_type_filter, default='All')
+with filter_col2:
+    year_selection = st.selectbox('Years', [2025, 2024, 'All', 'Rolling 12 mo'])
+  
 st.header('Total Activities')
 
 tot_act_col1, tot_act_col2, tot_act_col3, tot_act_col4 = st.columns(4)
-
 with tot_act_col1:
     st.metric('Activities', 12)
 with tot_act_col2:
