@@ -24,7 +24,7 @@ access_token = res.json()['access_token']
 
 header = {'Authorization': 'Bearer ' + access_token}
 
-# Strava API only allows 200 results per page. This function loops thorugh until all results are collected
+# Strava API only allows 200 results per page. This function loops through until all results are collected
 def get_activities_data():
     '''This function gets all activities data from Strava API'''
     # set value of page to start at page 1
@@ -36,7 +36,7 @@ def get_activities_data():
     while new_results:
         # requests one page at a time (200 results)
         get_activities = requests.get(activities_url, headers=header, params={'per_page': 200, 'page': page}).json()
-        # feeback
+        # feedback
         print(f"Fetching page {page}")
         print(f"Number of activities fetched: {len(get_activities)}")
         # if there are no results, the loop will stop
@@ -68,7 +68,7 @@ gear_list = activities_df['gear_id'].unique()
 gear_list = gear_list[~pd.isnull(gear_list)]
 
 def get_gear_data(gear_list):
-    '''This fuunction gets gear data from Strava API
+    '''This function gets gear data from Strava API
     
     Args:
         gear_list (array): List of distinct gear ids
@@ -84,7 +84,7 @@ def get_gear_data(gear_list):
         data.append(get_gear)
     return pd.json_normalize(data)
 
-# get all geat data
+# get all gear data
 gear = get_gear_data(gear_list)
 
 # convert meters to miles
