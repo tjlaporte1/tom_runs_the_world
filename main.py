@@ -5,6 +5,7 @@ import streamlit as st
 
 import login as login
 
+##### STRAVA API DATA EXTRACTION ####
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 auth_url = 'https://www.strava.com/oauth/token'
@@ -92,6 +93,7 @@ gear.distance = gear.distance / 1609.34
 
 gear = gear.drop(columns=['converted_distance'])
 
+##### DATA CLEANING AND TRANSFORMATION #####
 # create base dataframe joining activity and gear data
 df = pd.merge(activities_df, gear, how='left', left_on='gear_id', right_on='id', suffixes=('_activity', '_gear')).drop(columns='id_gear')
 
@@ -113,4 +115,34 @@ df['day_of_week'] = pd.to_datetime(df['start_date_local']).dt.day_name()
 # add year label
 df['year'] = pd.to_datetime(df['start_date_local']).dt.year
 
-st.write('''Hello World''')
+# max date
+max_date = df['start_date_local'].max()
+
+# TODO create distict activity type list
+# TODO create distinct gear type list
+# TODO create distinct year list
+# TODO create rolling 12 mo variable
+
+##### STREAMLIT DASHBOARD #####
+# TODO - create streamlit dashboard
+st.title('Tom Runs The World')
+st.subheader('Strava Data Analysis')
+st.caption('Data as of: ' + max_date)
+st.button('Refresh Data')
+st.divider()
+with st.sidebar:
+  st.subheader('Filters')
+  st.segmented_control('Activity Type', ['All', 'distinct activity types'])
+  st.selectbox('Years', [2025, 2024, 'All', 'Rolling 12 mo'])
+st.header('Total Activities')
+
+tot_act_col1, tot_act_col2, tot_act_col3, tot_act_col4 = st.columns(4)
+
+with tot_act_col1:
+    st.metric('Activities', 12)
+with tot_act_col2:
+    st.metric('Distance', '12 mi')
+with tot_act_col3:
+    st.metric('Elevation', '12 ft')
+with tot_act_col4:
+    st.metric('Time', '12:00:00')
