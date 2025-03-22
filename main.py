@@ -46,6 +46,11 @@ def get_activities_data():
         data.extend(get_activities)
         # increment the page number
         page += 1
+
+        if page > 20:
+            print('Stopping after 20 pages to avoid excessive API calls')
+            break
+        
     return pd.json_normalize(data)
         
 # get all activities data
@@ -85,7 +90,7 @@ def get_gear_data(gear_list):
     return pd.json_normalize(data)
 
 # get all gear data
-gear = get_gear_data(gear_list)
+gear = get_gear_data(gear_id_list)
 
 # convert meters to miles
 gear.distance = gear.distance / 1609.34
@@ -94,38 +99,59 @@ gear = gear.drop(columns=['converted_distance'])
 
 ##### DATA CLEANING AND TRANSFORMATION #####
 # create base dataframe joining activity and gear data
-df = pd.merge(activities_df, gear, how='left', left_on='gear_id', right_on='id', suffixes=('_activity', '_gear')).drop(columns='id_gear')
+pre_df = pd.merge(activities_df,
+                  gear, 
+                  how='left',
+                  left_on='gear_id',
+                  right_on='id',
+                  suffixes=('_activity', '_gear')).drop(columns='id_gear')
 
 # convert moving_time and elapsed time to H% M% S% format
-df['moving_time'] = pd.to_datetime(df['moving_time'], unit='s').dt.strftime('%H:%M:%S')
-df['elapsed_time'] = pd.to_datetime(df['elapsed_time'], unit='s').dt.strftime('%H:%M:%S')
+pre_df['moving_time'] = pd.to_datetime(pre_df['moving_time'], unit='s').dt.strftime('%H:%M:%S')
+pre_df['elapsed_time'] = pd.to_datetime(pre_df['elapsed_time'], unit='s').dt.strftime('%H:%M:%S')
 
 # convert start_date and start_date_local to datetime
-df['start_date'] = pd.to_datetime(df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S')
-df['start_date_local'] = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p')
+pre_df['start_date'] = pd.to_datetime(pd.to_datetime(pre_df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+pre_df['start_date_local'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
 
 # add start time for analysis and in am/pm format
-df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.strftime('%H:%M:%S')
-df['start_time_local_12h'] = pd.to_datetime(df['start_date_local']).dt.strftime("%I:%M %p")
+pre_df['start_time_local_24h'] = pd.to_datetime(pre_df['start_date_local']).dt.time
+pre_df['start_time_local_12h'] = pd.to_datetime(pre_df['start_date_local']).dt.strftime("%I:%M %p")
 
 # add day of week
-df['day_of_week'] = pd.to_datetime(df['start_date_local']).dt.day_name()
+pre_df['day_of_week'] = pd.to_datetime(pre_df['start_date_local']).dt.day_name()
+
+# add month
+pre_df['month'] = pd.to_datetime(pre_df['start_date_local']).dt.month_name()
 
 # add year label
-df['year'] = pd.to_datetime(df['start_date_local']).dt.year
+pre_df['year'] = pd.to_datetime(pre_df['start_date_local']).dt.year
+
+df = pre_df.copy()
 
 # max date
-max_date = df['start_date_local'].max()
+max_date = pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p').max()
 
-# TODO test these filters
 # distict activity type list
 act_type_filter = df['type'].value_counts().index.tolist()
+act_type_filter = [activity if activity in ['Run', 'Hike', 'Walk', 'Ride'] else 'Other' for activity in act_type_filter]
+act_type_filter = list(dict.fromkeys(act_type_filter))
 act_type_filter.insert(0, 'All')
-# TODO create distinct year list
+# distinct year list
 year_filter = sorted(df['year'].unique().tolist(), reverse=True)
 year_filter.insert(0, 'All')
-year_filter.insert(1, 'Rolling 12 mo')
-# TODO create rolling 12 mo variable
+year_filter.insert(1, 'Rolling 12 Months')
+# rolling 12 mo variable
+today = pd.to_datetime(max_date)
+rolling_12_months = today - pd.DateOffset(months=12)
+
+# cache df
+@st.cache_data
+def cache_df(df):
+    '''This function caches the dataframe for faster laoding'''
+    return df
+
+df = cache_df(df)
 
 ##### STREAMLIT DASHBOARD #####
 page_head = st.container()
@@ -135,20 +161,65 @@ page_head.caption('Data as of: ' + max_date)
 page_head.button('Refresh Data')
 page_head.divider()
 
-filter_col1, filter_col2 = st.columns([7,1])
+filter_col1, filter_col2 = st.columns([2, 1])
 with filter_col1:
     act_type_selection = st.segmented_control('Activity Type', act_type_filter, default='All')
 with filter_col2:
-    year_selection = st.selectbox('Years', [2025, 2024, 'All', 'Rolling 12 mo'])
+    year_selection = st.selectbox('Years', year_filter, index=1)
   
 st.header('Total Activities')
 
+def metric_calc(metric: str, field: str, act_type_selection, year_selection):
+    '''This function calculates the metrics for the overview section
+    
+    Args:
+        metric (str): The metric to calculate, becomes the metrics name
+        field (str): The field in the dataframe to use to calculate the metric which is used to sum or view distinct count
+        act_type_selection (str): The selected activity type
+        year_selection (str): The selected year
+        
+        Returns:
+            metric_result (int): The calculated metric
+    '''
+    if metric == 'Activities':
+        if act_type_selection == 'All' and year_selection == 'All':
+            metric_result = st.metric(f'{metric}', df[f'{field}'].nunique())
+        elif act_type_selection == 'All' and year_selection not in ['All', 'Rolling 12 Months']:
+            metric_result = st.metric(f'{metric}', df.loc[df['year'] == year_selection], f'{field}').nunique()
+        elif act_type_selection == 'All' and year_selection == 'Rolling 12 Months':
+            metric_result = st.metric(f'{metric}', df.loc[pd.to_datetime(df['start_date_local']) >= rolling_12_months], f'{field}').nunique()
+        elif act_type_selection != 'All' and year_selection == 'All':
+            metric_result = st.metric(f'{metric}', df.loc[df['type'] == act_type_selection], f'{field}').nunique()
+        elif act_type_selection != 'All' and year_selection == 'Rolling 12 Months':
+            metric_result = st.metric(f'{metric}', df.loc[(df['type'] == act_type_selection)
+                                            & (pd.to_datetime(df['start_date_local']) >= rolling_12_months)], f'{field}').nunique()
+        else:
+            metric_result = st.metric(f'{metric}', df.loc[(df['type'] == act_type_selection)
+                                        & df['year'] == year_selection], f'{field}').nunique()
+    else:
+        if act_type_selection == 'All' and year_selection == 'All':
+            metric_result = st.metric(f'{metric}', df[f'{field}'].sum())
+        elif act_type_selection == 'All' and year_selection not in ['All', 'Rolling 12 Months']:
+            metric_result = st.metric(f'{metric}', df.loc[df['year'] == year_selection], f'{field}').sum()
+        elif act_type_selection == 'All' and year_selection == 'Rolling 12 Months':
+            metric_result = st.metric(f'{metric}', df.loc[pd.to_datetime(df['start_date_local']) >= rolling_12_months], f'{field}').sum()
+        elif act_type_selection != 'All' and year_selection == 'All':
+            metric_result = st.metric(f'{metric}', df.loc[df['type'] == act_type_selection], f'{field}').sum()
+        elif act_type_selection != 'All' and year_selection == 'Rolling 12 Months':
+            metric_result = st.metric(f'{metric}', df.loc[(df['type'] == act_type_selection)
+                                            & (pd.to_datetime(df['start_date_local']) >= rolling_12_months)], f'{field}').sum()
+        else:
+            metric_result = st.metric(f'{metric}', df.loc[(df['type'] == act_type_selection)
+                                        & df['year'] == year_selection], f'{field}').sum()
+            
+    return metric_result
+
 tot_act_col1, tot_act_col2, tot_act_col3, tot_act_col4 = st.columns(4)
 with tot_act_col1:
-    st.metric('Activities', 12)
+    metric_calc('Activies', 'upload_id', act_type_selection, year_selection)
 with tot_act_col2:
-    st.metric('Distance', '12 mi')
+    metric_calc('Distance', 'distance_activity', act_type_selection, year_selection)
 with tot_act_col3:
-    st.metric('Elevation', '12 ft')
+    metric_calc('Elevation', 'total_elevation_gain', act_type_selection, year_selection)
 with tot_act_col4:
-    st.metric('Time', '12:00:00')
+    metric_calc('Time', 'moving_time', act_type_selection, year_selection)
