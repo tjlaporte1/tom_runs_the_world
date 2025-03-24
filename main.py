@@ -166,6 +166,7 @@ with st.container(): # page header
     st.caption('Data as of: ' + max_date)
     st.divider()
 
+st.caption('Select filters to change metrics and visuals')
 # filters
 filter_col1, filter_col2 = st.columns([2, 1])
 with filter_col1:
@@ -174,20 +175,6 @@ with filter_col2:
     year_selection = st.selectbox('Years', year_filter, index=1)
   
 st.header('Total Activities')
-
-def convert_timedelta(td: pd.Timedelta) -> str:
-    '''This function converts a timedelta object to a string in hours and minutes
-    
-    Args:
-        td (timedelta): timedelta object
-        
-    Returns:
-        str: string in hours and minutes
-    '''
-    total_seconds = int(td.total_seconds())
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{hours} hrs {minutes} min"
 
 def df_query_builder(act_type_selection, year_selection, gear_selection=None):
     '''This function builds a query to filter the dataframe based on the selected activity type, year and gear brand.
@@ -222,15 +209,32 @@ def df_query_builder(act_type_selection, year_selection, gear_selection=None):
     
     return df.query(query)
 
-tot_act_col1, tot_act_col2, tot_act_col3, tot_act_col4 = st.columns(4)
-with tot_act_col1:
-    st.metric('Activities', df_query_builder(act_type_selection, year_selection)['upload_id'].nunique())
-with tot_act_col2:
-    st.metric('Distance', df_query_builder(act_type_selection, year_selection)['distance_activity'].sum())
-with tot_act_col3:
-    st.metric('Elevation', df_query_builder(act_type_selection, year_selection)['total_elevation_gain'].sum())
-with tot_act_col4:
-    st.metric('Time', convert_timedelta(df_query_builder(act_type_selection, year_selection)['moving_time'].sum()))
+def convert_timedelta(td: pd.Timedelta) -> str:
+    '''This function converts a timedelta object to a string in hours and minutes
+    
+    Args:
+        td (timedelta): timedelta object
+        
+    Returns:
+        str: string in hours and minutes
+    '''
+    total_seconds = int(td.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours} hrs {minutes} min"
+
+with st.container(border=True): # metrics
+    a, metrics_col1, metrics_col2= st.columns([1, 2, 3])
+    with metrics_col1:
+        st.metric('Activities', df_query_builder(act_type_selection, year_selection)['upload_id'].nunique())
+    with metrics_col2:
+        st.metric('Distance', f"{round(df_query_builder(act_type_selection, year_selection)['distance_activity'].sum(), 2):,} mi")
+        
+    a, metrics_col3, metrics_col4 = st.columns([1, 2, 3])
+    with metrics_col3:
+        st.metric('Elevation', f"{int(round(df_query_builder(act_type_selection, year_selection)['total_elevation_gain'].sum(), 0)):,} ft")
+    with metrics_col4:
+        st.metric('Time', convert_timedelta(df_query_builder(act_type_selection, year_selection)['moving_time'].sum()))
     
     
 
