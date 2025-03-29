@@ -135,6 +135,12 @@ def get_data() -> pd.DataFrame:
     # add month
     pre_df['month'] = pd.to_datetime(pre_df['start_date_local']).dt.month_name()
 
+    # add month year
+    pre_df['month_year'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m'))
+    
+    # add month year name
+    pre_df['month_year_name'] = pd.to_datetime(pre_df['start_date_local']).dt.strftime('%b %Y')
+
     # add year label
     pre_df['year'] = pd.to_datetime(pre_df['start_date_local']).dt.year
     
@@ -148,9 +154,9 @@ max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p
 # distict activity type list
 highlighted_activities = ['Run', 'Hike', 'Walk', 'Ride']
 act_type_filter = df['type'].value_counts().index.tolist()
-act_type_filter = [activity if activity in highlighted_activities else 'Other' for activity in act_type_filter]
+#act_type_filter = [activity if activity in highlighted_activities else 'Other' for activity in act_type_filter]
 act_type_filter = list(dict.fromkeys(act_type_filter))
-act_type_filter.insert(0, 'All')
+#act_type_filter.insert(0, 'All')
 # distinct year list
 year_filter = sorted(df['year'].unique().tolist(), reverse=True)
 year_filter.insert(0, 'All')
@@ -166,23 +172,20 @@ with st.container(): # page header
     st.caption('Data as of: ' + max_date)
     st.divider()
 
-st.caption('Select filters to change metrics and visuals')
 # filters
-filter_col1, filter_col2 = st.columns([2, 1])
+filter_col1, filter_col2 = st.columns([3, 1])
 with filter_col1:
-    act_type_selection = st.segmented_control('Activity Type', act_type_filter, default='All')
+    act_type_selection = st.segmented_control('Activity Type', act_type_filter, default=act_type_filter, selection_mode='multi')
 with filter_col2:
     year_selection = st.selectbox('Years', year_filter, index=1)
-  
-st.header('Total Activities')
 
-def df_query_builder(act_type_selection, year_selection, gear_selection=None):
+def df_query_builder(act_type_selection, year_selection, gear_brand_selection=None) -> pd.DataFrame:
     '''This function builds a query to filter the dataframe based on the selected activity type, year and gear brand.
     
     Args:
         act_type_selection (str): Selected activity type from filter
         year_selection (str): Selected year from filter
-        gear_selection (str): Selected gear brand (optional)
+        gear_brand_selection (str): Selected gear brand (optional)
         
     Returns:
         df (DataFrame): Filtered dataframe based on the selected filters'''
@@ -223,6 +226,8 @@ def convert_timedelta(td: pd.Timedelta) -> str:
     minutes, seconds = divmod(remainder, 60)
     return f"{hours} hrs {minutes} min"
 
+st.subheader('Activity Metrics')
+
 with st.container(border=True): # metrics
     a, metrics_col1, metrics_col2= st.columns([1, 2, 3])
     with metrics_col1:
@@ -235,7 +240,15 @@ with st.container(border=True): # metrics
         st.metric('Elevation', f"{int(round(df_query_builder(act_type_selection, year_selection)['total_elevation_gain'].sum(), 0)):,} ft")
     with metrics_col4:
         st.metric('Time', convert_timedelta(df_query_builder(act_type_selection, year_selection)['moving_time'].sum()))
-    
-    
 
-    
+st.subheader('Total Activities')
+
+with st.container():
+    temp_df = df_query_builder(act_type_selection, year_selection).sort_values(by='start_date_local').groupby('month_year', sort=False).size().reset_index(name='Activities').rename(columns={'month_year': 'Month'})
+    st.line_chart(temp_df, x='Month', y='Activities', color=None, use_container_width=True)
+
+st.subheader('Total Distance')
+
+with st.container():
+    temp_df = df_query_builder(act_type_selection, year_selection).sort_values(by='start_date_local').groupby('month_year', sort=False).agg({'distance_activity': 'sum'}).reset_index().rename(columns={'month_year': 'Month', 'distance_activity': 'Distance'})
+    st.line_chart(temp_df, x='Month', y='Distance', color=None, use_container_width=True)
