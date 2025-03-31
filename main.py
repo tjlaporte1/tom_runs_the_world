@@ -175,15 +175,14 @@ with st.container(): # page header
 # filters
 filter_col1, filter_col2 = st.columns([3, 1])
 with filter_col1:
-    act_type_selection = st.segmented_control('Activity Type', act_type_filter, default=act_type_filter, selection_mode='multi')
+    act_type_selection = st.segmented_control('Activity Type', act_type_filter, default=highlighted_activities, selection_mode='multi')
 with filter_col2:
     year_selection = st.selectbox('Years', year_filter, index=1)
 
-def df_query_builder(act_type_selection, year_selection, gear_brand_selection=None) -> pd.DataFrame:
+def df_query_builder(year_selection, gear_brand_selection=None) -> pd.DataFrame:
     '''This function builds a query to filter the dataframe based on the selected activity type, year and gear brand.
     
     Args:
-        act_type_selection (str): Selected activity type from filter
         year_selection (str): Selected year from filter
         gear_brand_selection (str): Selected gear brand (optional)
         
@@ -193,12 +192,7 @@ def df_query_builder(act_type_selection, year_selection, gear_brand_selection=No
     conditions = []
     
     # activity type filter
-    if act_type_selection == 'All':
-        conditions.append("type != 'None'")
-    elif act_type_selection == 'Other':
-        conditions.append("type not in @highlighted_activities")
-    else:
-        conditions.append("type == @act_type_selection")
+    conditions.append("type in @act_type_selection")
 
     # year filter
     if year_selection == 'All':
@@ -229,26 +223,29 @@ def convert_timedelta(td: pd.Timedelta) -> str:
 st.subheader('Activity Metrics')
 
 with st.container(border=True): # metrics
-    a, metrics_col1, metrics_col2= st.columns([1, 2, 3])
+    a, metrics_col1, metrics_col2= st.columns([1, 3.5, 3])
     with metrics_col1:
-        st.metric('Activities', df_query_builder(act_type_selection, year_selection)['upload_id'].nunique())
+        st.metric('Activities', df_query_builder(year_selection)['upload_id'].nunique())
     with metrics_col2:
-        st.metric('Distance', f"{round(df_query_builder(act_type_selection, year_selection)['distance_activity'].sum(), 2):,} mi")
+        st.metric('Distance', f"{round(df_query_builder(year_selection)['distance_activity'].sum(), 2):,} mi")
         
-    a, metrics_col3, metrics_col4 = st.columns([1, 2, 3])
+    a, metrics_col3, metrics_col4 = st.columns([1, 3.5, 3])
     with metrics_col3:
-        st.metric('Elevation', f"{int(round(df_query_builder(act_type_selection, year_selection)['total_elevation_gain'].sum(), 0)):,} ft")
+        st.metric('Elevation', f"{int(round(df_query_builder(year_selection)['total_elevation_gain'].sum(), 0)):,} ft")
     with metrics_col4:
-        st.metric('Time', convert_timedelta(df_query_builder(act_type_selection, year_selection)['moving_time'].sum()))
+        st.metric('Time', convert_timedelta(df_query_builder(year_selection)['moving_time'].sum()))
 
-st.subheader('Total Activities')
-
-with st.container():
-    temp_df = df_query_builder(act_type_selection, year_selection).sort_values(by='start_date_local').groupby('month_year', sort=False).size().reset_index(name='Activities').rename(columns={'month_year': 'Month'})
-    st.line_chart(temp_df, x='Month', y='Activities', color=None, use_container_width=True)
+with st.container(border=True):
+    st.subheader('Total Activities')
+    st.caption('All Activities By Month')
+    temp_df = df_query_builder(year_selection).sort_values(by='start_date_local').groupby('month_year', sort=False).size().reset_index(name='Activities').rename(columns={'month_year': 'Month'})
+    st.line_chart(temp_df, x='Month', y='Activities', use_container_width=True)
+    st.caption('Activities By Type')
+    temp_df2 = df_query_builder(year_selection).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).size().reset_index(name='Activities').rename(columns={'month_year': 'Month'})
+    st.line_chart(temp_df2, x='Month', y='Activities', color='type', use_container_width=True)
 
 st.subheader('Total Distance')
 
 with st.container():
-    temp_df = df_query_builder(act_type_selection, year_selection).sort_values(by='start_date_local').groupby('month_year', sort=False).agg({'distance_activity': 'sum'}).reset_index().rename(columns={'month_year': 'Month', 'distance_activity': 'Distance'})
+    temp_df = df_query_builder(year_selection).sort_values(by='start_date_local').groupby('month_year', sort=False).agg({'distance_activity': 'sum'}).reset_index().rename(columns={'month_year': 'Month', 'distance_activity': 'Distance'})
     st.line_chart(temp_df, x='Month', y='Distance', color=None, use_container_width=True)
