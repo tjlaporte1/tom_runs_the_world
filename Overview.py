@@ -180,7 +180,7 @@ with filter_col1:
 with filter_col2:
     year_selection = st.selectbox('Years', year_filter, index=1)
 
-def df_query_builder(year_selection, gear_brand_selection=None) -> pd.DataFrame:
+def df_query_builder(year_selection) -> pd.DataFrame:
     '''This function builds a query to filter the dataframe based on the selected activity type, year and gear brand.
     
     Args:
@@ -202,6 +202,9 @@ def df_query_builder(year_selection, gear_brand_selection=None) -> pd.DataFrame:
         conditions.append("start_date_local >= @rolling_12_months")
     else:
         conditions.append("year == @year_selection")
+        
+    # gear brand filter
+    conditions.append("brand_name in @gear_brand_selection")
 
     query = ' and '.join(conditions)
     
