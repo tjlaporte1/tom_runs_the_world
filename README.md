@@ -1,11 +1,21 @@
 # Tom Runs The World
-Strava Data Analysis
+#### Strava Data Analysis
+
+---
+
+This Python project receives data from the Strava API and builds a web app using streamlit. The project is designed to explore Strava data in a way that is not done by Strava already on their website. It specifically focuses on gear, performance metrics, and activity timing. To run this analysis, one would need:
+
+- A Strava account
+- At least one activity recorded on Strava
+- A persoanl Strava API Application (instructions below)
 
 ## Streamlit App
 
 View the final result
 
-## Setting up permissions
+---
+
+## Creation and Setup of Strava API Application
 
 1. **Use the [Strava API Documentation](https://developers.strava.com) to create your application** on their website. Once created, locate the `Client ID` and `Client Secret` in the details section of your Application.
 
@@ -22,7 +32,7 @@ View the final result
 
 5. **Use the code below** to build the URL and POST to it:
    ```python
-   requests.post(f'https://www.strava.com/oauth/token?client_id={login.client_id}&client_secret={login.client_secret}&code={login.authorization_token}&grant_type=').json()
+   requests.post(f'https://www.strava.com/oauth/token?client_id={login.client_id}&client_secret={login.client_secret}&code={login.authorization_token}&grant_type=authorization_code').json()
    ```
 
 6. In the output, **copy the `refresh_token`** and add this value to `login.py`. 
