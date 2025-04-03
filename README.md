@@ -1,16 +1,33 @@
-# tom_runs_the_world
-Analyze Tom's run data
+# Tom Runs The World
+Strava Data Analysis
 
-Setting up permissions
-Fill in the login.py with your client_id & client_secret values from the API settings on strava's site
-use the code below to generate the authorization link to click on
-f'http://www.strava.com/oauth/authorize?client_id={login.client_id}&response_type=code&redirect_uri=http://localhost/exchange_token&approval_prompt=force&scope=read_all,activity:read_all'
+## Streamlit App
 
-Once clicked and authorized the access, it will send you to a web page that says it can't connect to the server. In the url, copy the value after 'code='. 
-Save the code in login.py as authorization_code. Then use the code below to build the url below. (a restart of the kernal may be needed to grab the new values in login.py)
+View the final result
 
-requests.post(f'https://www.strava.com/oauth/token?client_id={login.client_id}&client_secret={login.client_secret}&code={login.authorization_token}&grant_type=').json()
+## Setting up permissions
 
-In the output you will grab the 'refresh_token' and add this value to login.py. (restarting the kernal an additional time will be needed to get this new value from login.py)
+1. **Use the [Strava API Documentation](https://developers.strava.com) to create your application** on their website. Once created, locate the `Client ID` and `Client Secret` in the details section of your Application.
 
-Now that we have the correct refresh token for the proper permissions, we do not need to do this process again.
+2. **Use `login_example.py`** to create your own `login.py` file. In this file paste `client_id` and `client_secret` values from your Application settings on Strava's site.
+
+3. **Generate the authorization link** to click on. The purpose of this step is to ensure the scope of the access is `read_all` and `activity:read_all` at the end of the url:
+   ```python
+   f'http://www.strava.com/oauth/authorize?client_id={login.client_id}&response_type=code&redirect_uri=http://localhost/exchange_token&approval_prompt=force&scope=read_all,activity:read_all'
+   ```
+
+3. **Click on the generated link and authorize the app.** Once authorized, the page will display an error that it can't connect to the server. In the URL on the page, **copy the value after 'code='**.
+
+4. **Save the copied code** in `login.py` as `authorization_token`.
+
+5. **Use the code below** to build the URL and POST to it:
+   ```python
+   requests.post(f'https://www.strava.com/oauth/token?client_id={login.client_id}&client_secret={login.client_secret}&code={login.authorization_token}&grant_type=').json()
+   ```
+
+6. In the output, **copy the `refresh_token`** and add this value to `login.py`. 
+
+7. **Restart the kernel** to get the new values from `login.py`.
+
+## Important Notes:
+- Now that you have the correct `refresh_token` for the proper permissions, you **do not need to repeat this process again**.
