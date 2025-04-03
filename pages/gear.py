@@ -3,9 +3,6 @@ import streamlit as st
 
 import Overview as o
 
-# distinct gear type list
-gear_brand_list = o.df['brand_name'].value_counts().index.tolist()
-
 # header
 with st.container():
     st.title('Tom Runs The World')
@@ -13,11 +10,11 @@ with st.container():
     st.caption('Data as of: ' + o.max_date)
     st.divider()
 
-# filters
-filter_col1, filter_col2 = st.columns([3, 1])
-with filter_col1:
-    act_type_selection = st.segmented_control('Activity Type', o.act_type_filter, default=o.highlighted_activities, selection_mode='multi')
-with filter_col2:
-    year_selection = st.selectbox('Years', o.year_filter, index=1)
+# filters in sidebar
+with st.sidebar:
     
-gear_brand_selection = st.segmented_control('Gear Brand', gear_brand_list, default=gear_brand_list, selection_mode='multi')
+    st.subheader('Filters')
+    
+    year_selection = st.selectbox('Years', o.year_filter, index=1)
+    act_type_selection = st.multiselect('Activity Type', o.act_type_filter, default=o.highlighted_activities, placeholder='Select Activity Type')
+    gear_brand_selection = st.multiselect('Gear Brand', o.gear_brand_list, default=o.gear_brand_list, placeholder='Select Gear Brand')

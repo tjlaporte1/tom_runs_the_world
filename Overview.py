@@ -157,10 +157,15 @@ act_type_filter = df['type'].value_counts().index.tolist()
 #act_type_filter = [activity if activity in highlighted_activities else 'Other' for activity in act_type_filter]
 act_type_filter = list(dict.fromkeys(act_type_filter))
 #act_type_filter.insert(0, 'All')
+
 # distinct year list
 year_filter = sorted(df['year'].unique().tolist(), reverse=True)
 year_filter.insert(0, 'All')
 year_filter.insert(1, 'Rolling 12 Months')
+
+# distinct gear type list
+gear_brand_list = df['brand_name'].value_counts().index.tolist()
+
 # rolling 12 mo variable
 today = pd.to_datetime(max_date)
 rolling_12_months = today - pd.DateOffset(months=12)
@@ -172,13 +177,15 @@ with st.container():
     st.subheader('Strava Data Analysis')
     st.caption('Data as of: ' + max_date)
     st.divider()
-
-# filters
-filter_col1, filter_col2 = st.columns([3, 1])
-with filter_col1:
-    act_type_selection = st.segmented_control('Activity Type', act_type_filter, default=highlighted_activities, selection_mode='multi')
-with filter_col2:
+    
+# filters in sidebar
+with st.sidebar:
+    
+    st.subheader('Filters')
+    
     year_selection = st.selectbox('Years', year_filter, index=1)
+    act_type_selection = st.multiselect('Activity Type', act_type_filter, default=highlighted_activities, placeholder='Select Activity Type')
+    gear_brand_selection = st.multiselect('Gear Brand', gear_brand_list, default=gear_brand_list, placeholder='Select Gear Brand')
 
 def df_query_builder(year_selection) -> pd.DataFrame:
     '''This function builds a query to filter the dataframe based on the selected activity type, year and gear brand.
@@ -228,7 +235,7 @@ def convert_timedelta(td: pd.Timedelta) -> str:
 st.subheader('Activity Metrics')
 
 # metrics
-with st.container():
+with st.container(border=True):
     
     a, metrics_col1, metrics_col2= st.columns([1, 3.5, 3])
     with metrics_col1:
