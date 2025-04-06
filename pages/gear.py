@@ -1,7 +1,10 @@
 import pandas as pd
 import streamlit as st
 
-df = st.session_state.strava_data
+st.session_state
+
+df = pd.read_csv('data/strava_data.csv')
+#st.session_state.strava_data
 
 def df_query_builder(year_selection) -> pd.DataFrame:
     '''This function builds a query to filter the dataframe based on the selected activity type, year and gear brand.
@@ -52,17 +55,48 @@ max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p
 # distict activity type list
 highlighted_activities = ['Run', 'Hike', 'Walk', 'Ride']
 act_type_filter = df['type'].value_counts().index.tolist()
-#act_type_filter = [activity if activity in highlighted_activities else 'Other' for activity in act_type_filter]
 act_type_filter = list(dict.fromkeys(act_type_filter))
-#act_type_filter.insert(0, 'All')
+
+def default_activity_selection():
+    
+    '''This function sets the default activity type selection for the filter and captures the selection to use across the app.'''
+    
+    if 'act_type_selection' not in st.session_state:
+        act_filter = highlighted_activities
+    else:
+        act_filter = st.session_state.act_type_selection
+    
+    return act_filter
 
 # distinct year list
 year_filter = sorted(df['year'].unique().tolist(), reverse=True)
 year_filter.insert(0, 'All')
 year_filter.insert(1, 'Rolling 12 Months')
 
+def default_year_selection():
+    
+    '''This function sets the default year selection for the filter and captures the selection to use across the app.'''
+    
+    if 'year_selection' not in st.session_state:
+        year_filter_1 = 'Rolling 12 Months'
+    else:
+        year_filter_1 = st.session_state.year_selection
+    
+    return year_filter_1
+
 # distinct gear type list
 gear_brand_list = df['brand_name'].value_counts().index.tolist()
+
+def default_gear_brand_selection():
+    
+    '''This function sets the default gear brand selection for the filter and captures the selection to use across the app.'''
+    
+    if 'gear_brand_selection' not in st.session_state:
+        gear_filter = gear_brand_list
+    else:
+        gear_filter = st.session_state.gear_brand_selection
+    
+    return gear_filter
 
 # rolling 12 mo variable
 today = pd.to_datetime(max_date)
@@ -80,9 +114,17 @@ with st.sidebar:
     
     st.subheader('Filters')
     
-    year_selection = st.selectbox('Years', year_filter, index=1)
-    act_type_selection = st.multiselect('Activity Type', act_type_filter, default=highlighted_activities, placeholder='Select Activity Type')
-    gear_brand_selection = st.multiselect('Gear Brand', gear_brand_list, default=gear_brand_list, placeholder='Select Gear Brand')
+    # initialize year selection
+    st.session_state.year_selection = st.session_state.get('year_selection', default_year_selection())
+    year_selection = st.selectbox('Years', year_filter, key='year_selection')
+    
+    # initialize activity type selection
+    st.session_state.act_type_selection = st.session_state.get('act_type_selection', default_activity_selection())
+    act_type_selection = st.multiselect('Activity Type', act_type_filter, placeholder='Select Activity Type', key='act_type_selection')
+    
+    # initialize gear brand selection
+    st.session_state.gear_brand_selection = st.session_state.get('gear_brand_selection', default_gear_brand_selection())
+    gear_brand_selection = st.multiselect('Gear Brand', gear_brand_list, placeholder='Select Gear Brand', key='gear_brand_selection')
 
 # tabs
 tab_act, tab_dist, tab_ele, tab_time = st.tabs(['Activities', 'Distance', 'Elevation', 'Time'])
