@@ -25,8 +25,8 @@ access_token = res.json()['access_token']
 
 header = {'Authorization': 'Bearer ' + access_token}
 
-@st.cache_data
-def get_data() -> pd.DataFrame:
+@st.cache_data()
+def get_strava_data() -> pd.DataFrame:
     '''This function builds the dataframe from Strava API data. It is used to then cache the dataframe for faster loading in the Streamlit app.
     
     Returns:
@@ -146,7 +146,28 @@ def get_data() -> pd.DataFrame:
     
     return pre_df
 
-df = get_data()
+# TODO - add a function to load data from csv unless the user clicke refresh data
+    # # load data to the session state to avoid reloading
+    # def setup_session_state():
+    # if 'strava_data' not in st.session_state:
+    #     st.session_state.strava_data = pd.read_csv('data/strava_data.csv')
+        
+    # else
+
+    # df = get_strava_data()
+    
+    # # define a function to set up session state
+    # def refresh_data():
+    # if 'strava_data' not in st.session_state:
+    #     st.session_state.strava_data = get_strava_data()
+    
+    
+# TODO convert fields from csv to appropriat data types from above    
+# load data from stored strava data
+df = pd.read_csv('data/strava_data.csv')
+
+if 'strava_data' not in st.session_state:
+    st.session_state.strava_data = df
 
 # max date
 max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p').max()
@@ -176,6 +197,8 @@ with st.container():
     st.title('Tom Runs The World')
     st.subheader('Strava Data Analysis')
     st.caption('Data as of: ' + max_date)
+    st.button('Refresh Data') #on_click=
+    st.session_state
     st.divider()
     
 # filters in sidebar
@@ -183,9 +206,9 @@ with st.sidebar:
     
     st.subheader('Filters')
     
-    year_selection = st.selectbox('Years', year_filter, index=1)
-    act_type_selection = st.multiselect('Activity Type', act_type_filter, default=highlighted_activities, placeholder='Select Activity Type')
-    gear_brand_selection = st.multiselect('Gear Brand', gear_brand_list, default=gear_brand_list, placeholder='Select Gear Brand')
+    year_selection = st.selectbox('Years', year_filter, index=1, key='year_selection')
+    act_type_selection = st.multiselect('Activity Type', act_type_filter, default=highlighted_activities, placeholder='Select Activity Type', key='act_type_selection')
+    gear_brand_selection = st.multiselect('Gear Brand', gear_brand_list, default=gear_brand_list, placeholder='Select Gear Brand', key='gear_brand_selection')
 
 def df_query_builder(year_selection) -> pd.DataFrame:
     '''This function builds a query to filter the dataframe based on the selected activity type, year and gear brand.
