@@ -3,7 +3,7 @@ import requests
 import urllib3
 import streamlit as st
 
-import login as login
+#import login as login
 
 ##### STRAVA API DATA EXTRACTION ####
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -13,9 +13,9 @@ activities_url = 'https://www.strava.com/api/v3/athlete/activities'
 gear_url = 'https://www.strava.com/api/v3/gear/{id}'
 
 payload = {
-    'client_id': f'{login.client_id}',
-    'client_secret': f'{login.client_secret}',
-    'refresh_token': f'{login.refresh_token}',
+    'client_id': f'{st.secrets['client_id']}',
+    'client_secret': f'{st.secrets['client_secret']}',
+    'refresh_token': f'{st.secrets['refresh_token']}',
     'grant_type': 'refresh_token',
     'f': 'json'
 }
