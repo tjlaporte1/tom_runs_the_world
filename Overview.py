@@ -25,7 +25,6 @@ access_token = res.json()['access_token']
 
 header = {'Authorization': 'Bearer ' + access_token}
 
-@st.cache_data()
 def get_strava_data() -> pd.DataFrame:
     '''This function builds the dataframe from Strava API data. It is used to then cache the dataframe for faster loading in the Streamlit app.
     
@@ -146,24 +145,68 @@ def get_strava_data() -> pd.DataFrame:
     
     return pre_df
 
-st.session_state.refresh_counter = 0
-
-# load data to the session state to avoid reloading
-def setup_session_state():
+def refresh_data_button():
     
-    if 'strava_data' not in st.session_state:
-        st.session_state.strava_data = pd.read_csv('data/strava_data.csv')
-    elif st.session_state.refresh_counter < 1:
-        st.session_state.strava_data = get_strava_data()
-        st.session_state.refresh_counter += 1
+    '''This function is used to refresh the data via the button.'''
+        
+    if st.session_state.refresh_counter == 0:
+        return
+    
+    elif st.session_state.refresh_counter == 1:
+        with st.spinner('Calling Strava API...', show_time=True):
+            # get strava data
+            local_df = get_strava_data()
+            st.session_state.strava_data = local_df
+            # archive the data
+            local_df.to_csv('data/strava_data.csv', index=False)
+            st.success('Data updated successfully!')
+            # save the refresh data and time
+            refresh_datetime = pd.Timestamp.now()
+            refresh_datetime = refresh_datetime.strftime('%Y-%m-%d %I:%M %p')
+            pd.DataFrame({'refresh_datetime': [refresh_datetime]}).to_csv('data/refresh_datetime.csv', index=False)
+            
+            st.session_state.refresh_counter += 1
+        
+    elif st.session_state.refresh_counter > 1 and st.session_state.refresh_counter < 5:
+        st.info('Data is already refreshed')
+        
     else:
-        st.write('Data already refreshed')
+        st.warning("No really, it's refreshed. I promise!")
+
+@st.cache_data()
+def load_data() -> pd.DataFrame:
     
-# TODO convert fields from csv to appropriat data types from above    
-# load data from session state
-#setup_session_state()
-df = pd.read_csv('data/strava_data.csv')
-#st.session_state.strava_data
+    '''This function loads the dataframe from the session state. It then corrects the data types.
+    
+    Returns: DataFrame: Strave dataframe'''
+    
+    df = pd.DataFrame(st.session_state.strava_data)
+    
+    # convert moving_time and elapsed time to H% M% S% format
+    df['moving_time'] = pd.to_timedelta(df['moving_time'])
+    df['elapsed_time'] = pd.to_timedelta(df['elapsed_time'])
+    
+    # convert start_date and start_date_local to datetime
+    df['start_date'] = pd.to_datetime(pd.to_datetime(df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+    df['start_date_local'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+    
+    # add start time for analysis and in am/pm format
+    df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.time
+    df['start_time_local_12h'] = pd.to_datetime(df['start_date_local']).dt.strftime("%I:%M %p")
+
+    # add month year
+    df['month_year'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m'))
+    
+    return df
+
+# load data
+if 'strava_data' not in st.session_state:
+    st.session_state.strava_data = pd.read_csv('data/strava_data.csv')
+    
+if 'refresh_counter' not in st.session_state:
+    st.session_state.refresh_counter = 0
+
+df = load_data()
 
 # max date
 max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p').max()
@@ -215,6 +258,7 @@ def default_gear_brand_selection():
     return gear_filter
 
 # rolling 12 mo variable
+last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
 today = pd.to_datetime(max_date)
 rolling_12_months = today - pd.DateOffset(months=12)
 
@@ -223,15 +267,18 @@ rolling_12_months = today - pd.DateOffset(months=12)
 with st.container():
     st.title('Tom Runs The World')
     st.subheader('Strava Data Analysis')
-    st.caption('Data as of: ' + max_date)
-    st.button('Refresh Data')#, on_click=setup_session_state())
-    st.session_state
+    st.caption('Last Activity Date: ' + max_date)
+    st.caption('Last Data Refresh: ' + last_refresh)
+    if st.button('Refresh Data'):
+        st.session_state.refresh_counter += 1
+        refresh_data_button()
+        last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
     st.divider()
     
 # filters in sidebar
 with st.sidebar:
     
-    st.subheader('Filters')
+    st.header('Filters')
     
     # initialize year selection
     st.session_state.year_selection = st.session_state.get('year_selection', default_year_selection())
@@ -290,7 +337,7 @@ def convert_timedelta(td: pd.Timedelta) -> str:
     return f"{hours} hrs {minutes} min"
 
 # metrics header
-st.subheader('Activity Metrics')
+st.header('Activity Metrics')
 
 # metrics
 with st.container(border=True):

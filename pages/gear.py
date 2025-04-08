@@ -1,10 +1,36 @@
 import pandas as pd
 import streamlit as st
 
-st.session_state
+@st.cache_data()
+def load_data() -> pd.DataFrame:
+    
+    '''This function loads the dataframe from the session state. It then corrects the data types.
+    
+    Returns: DataFrame: Strave dataframe'''
+    
+    df = pd.DataFrame(st.session_state.strava_data)
+    
+    # convert moving_time and elapsed time to H% M% S% format
+    df['moving_time'] = pd.to_timedelta(df['moving_time'])
+    df['elapsed_time'] = pd.to_timedelta(df['elapsed_time'])
+    
+    # convert start_date and start_date_local to datetime
+    df['start_date'] = pd.to_datetime(df['start_date'])
+    df['start_date_local'] = pd.to_datetime(df['start_date_local'])
+    
+    # add start time for analysis and in am/pm format
+    df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.time
+    df['start_time_local_12h'] = pd.to_datetime(df['start_date_local']).dt.strftime("%I:%M %p")
+    
+    # add month year
+    df['month_year'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m'))
+    
+    return df
 
-df = pd.read_csv('data/strava_data.csv')
-#st.session_state.strava_data
+if 'strava_data' not in st.session_state:
+    st.session_state.strava_data = pd.read_csv('data/strava_data.csv')
+
+df = load_data()
 
 def df_query_builder(year_selection) -> pd.DataFrame:
     '''This function builds a query to filter the dataframe based on the selected activity type, year and gear brand.
@@ -99,6 +125,7 @@ def default_gear_brand_selection():
     return gear_filter
 
 # rolling 12 mo variable
+last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
 today = pd.to_datetime(max_date)
 rolling_12_months = today - pd.DateOffset(months=12)
 
@@ -106,13 +133,15 @@ rolling_12_months = today - pd.DateOffset(months=12)
 with st.container():
     st.title('Tom Runs The World')
     st.subheader('Strava Data Analysis')
-    st.caption('Data as of: ' + max_date)
+    st.caption('Last Activity Date: ' + max_date)
+    st.caption('Last Data Refresh: ' + last_refresh)
+    st.page_link('Overview.py', label='Refresh Data on Overview Page', icon='🔄')
     st.divider()
 
 # filters in sidebar
 with st.sidebar:
     
-    st.subheader('Filters')
+    st.header('Filters')
     
     # initialize year selection
     st.session_state.year_selection = st.session_state.get('year_selection', default_year_selection())
@@ -125,6 +154,8 @@ with st.sidebar:
     # initialize gear brand selection
     st.session_state.gear_brand_selection = st.session_state.get('gear_brand_selection', default_gear_brand_selection())
     gear_brand_selection = st.multiselect('Gear Brand', gear_brand_list, placeholder='Select Gear Brand', key='gear_brand_selection')
+    
+st.header('Gear Analysis')
 
 # tabs
 tab_act, tab_dist, tab_ele, tab_time = st.tabs(['Activities', 'Distance', 'Elevation', 'Time'])
