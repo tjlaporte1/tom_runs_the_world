@@ -1,4 +1,3 @@
 login.py
 *.toml
 __pycache__/
-/data

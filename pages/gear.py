@@ -27,9 +27,6 @@ def load_data() -> pd.DataFrame:
     
     return df
 
-if 'strava_data' not in st.session_state:
-    st.session_state.strava_data = pd.read_csv('data/strava_data.csv')
-
 df = load_data()
 
 def df_query_builder(year_selection) -> pd.DataFrame:
@@ -125,7 +122,7 @@ def default_gear_brand_selection():
     return gear_filter
 
 # rolling 12 mo variable
-last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
+# last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
 today = pd.to_datetime(max_date)
 rolling_12_months = today - pd.DateOffset(months=12)
 
@@ -134,8 +131,8 @@ with st.container():
     st.title('Tom Runs The World')
     st.subheader('Strava Data Analysis')
     st.caption('Last Activity Date: ' + max_date)
-    st.caption('Last Data Refresh: ' + last_refresh)
-    st.page_link('Overview.py', label='Refresh Data on Overview Page', icon='🔄')
+    # st.caption('Last Data Refresh: ' + last_refresh)
+    # st.page_link('Overview.py', label='Refresh Data on Overview Page', icon='🔄')
     st.divider()
 
 # filters in sidebar

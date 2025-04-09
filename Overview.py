@@ -31,147 +31,157 @@ def get_strava_data() -> pd.DataFrame:
     Returns:
         pre_df (DataFrame): DataFrame of activities and gear data'''
     
-    # Strava API only allows 200 results per page. This function loops through until all results are collected
-    def get_activities_data() -> pd.DataFrame:
-        '''This function gets all activities data from Strava API
+    with st.status('Downloading Data...', expanded=True) as status:
         
-        Returns:
-            data (DataFrame): Normalized JSON data of activities'''
-            
-        # set value of page to start at page 1
-        page = 1
-        # create an empty list to store all data
-        data = []
-        # set new_results to True to start the loop
-        new_results = True
-        while new_results:
-            # requests one page at a time (200 results)
-            get_activities = requests.get(activities_url, headers=header, params={'per_page': 200, 'page': page}).json()
-            # feedback
-            print(f"Fetching page {page}")
-            print(f"Number of activities fetched: {len(get_activities)}")
-            # if there are no results, the loop will stop
-            new_results = get_activities
-            # add the results to the data list
-            data.extend(get_activities)
-            # increment the page number
-            page += 1
-
-            if page > 20:
-                print('Stopping after 20 pages to avoid excessive API calls')
-                break
-            
-        return pd.json_normalize(data)
-            
-    # get all activities data
-    activities = get_activities_data()
-
-    # convert meters to miles
-    activities.distance = (activities.distance / 1609.34).round(2)
-    # convert to mph
-    activities.average_speed = (activities.average_speed * 2.23694).round(2)
-    activities.max_speed = (activities.max_speed * 2.23694).round(2)
-    # convert to feet
-    activities.total_elevation_gain = (activities.total_elevation_gain * 3.28084).round(2)
-    activities.elev_high = (activities.elev_high * 3.28084).round(2)
-    activities.elev_low = (activities.elev_low * 3.28084).round(2)
-
-    activities_df = pd.DataFrame(activities)
-
-    # get distinct gear id's
-    gear_id_list = activities_df['gear_id'].unique()
-    gear_id_list = gear_id_list[~pd.isnull(gear_id_list)]
-
-    def get_gear_data(gear_list: list) -> pd.DataFrame:
-        '''This function gets gear data from Strava API
-        
-        Args:
-            gear_list (array): List of distinct gear ids
+        # Strava API only allows 200 results per page. This function loops through until all results are collected
+        def get_activities_data() -> pd.DataFrame:
+            '''This function gets all activities data from Strava API
             
             Returns:
-                data (DataFrame): Normalized JSON data of gear'''
+                data (DataFrame): Normalized JSON data of activities'''
+                
+            # set value of page to start at page 1
+            page = 1
+            # create an empty list to store all data
+            data = []
+            # set new_results to True to start the loop
+            new_results = True
             
-        # create empty list to store gear data
-        data = []
-        # loop through gear_list and get gear data
-        for gear_id in gear_list:
-            get_gear = requests.get(gear_url.format(id=gear_id), headers=header).json()
-            data.append(get_gear)
-        return pd.json_normalize(data)
+            st.write('Fetching Activities...')
+            
+            while new_results:
+                # requests one page at a time (200 results)
+                get_activities = requests.get(activities_url, headers=header, params={'per_page': 200, 'page': page}).json()
+                # feedback
+                print(f"Fetching page {page}")
+                print(f"Number of activities fetched: {len(get_activities)}")
+                # if there are no results, the loop will stop
+                new_results = get_activities
+                # add the results to the data list
+                data.extend(get_activities)
+                # increment the page number
+                page += 1
 
-    # get all gear data
-    gear = get_gear_data(gear_id_list)
+                if page > 20:
+                    print('Stopping after 20 pages to avoid excessive API calls')
+                    break
+                
+            return pd.json_normalize(data)
+              
+        # get all activities data
+        activities = get_activities_data()
 
-    # convert meters to miles
-    gear.distance = gear.distance / 1609.34
+        st.write('Assempling Activity Data...')
+        
+        # convert meters to miles
+        activities.distance = (activities.distance / 1609.34).round(2)
+        # convert to mph
+        activities.average_speed = (activities.average_speed * 2.23694).round(2)
+        activities.max_speed = (activities.max_speed * 2.23694).round(2)
+        # convert to feet
+        activities.total_elevation_gain = (activities.total_elevation_gain * 3.28084).round(2)
+        activities.elev_high = (activities.elev_high * 3.28084).round(2)
+        activities.elev_low = (activities.elev_low * 3.28084).round(2)
 
-    gear = gear.drop(columns=['converted_distance'])
+        activities_df = pd.DataFrame(activities)
 
-    ##### DATA CLEANING AND TRANSFORMATION #####
-    # create base dataframe joining activity and gear data
-    pre_df = pd.merge(activities_df,
-                    gear, 
-                    how='left',
-                    left_on='gear_id',
-                    right_on='id',
-                    suffixes=('_activity', '_gear')).drop(columns='id_gear')
+        # get distinct gear id's
+        gear_id_list = activities_df['gear_id'].unique()
+        gear_id_list = gear_id_list[~pd.isnull(gear_id_list)]
 
-    # convert moving_time and elapsed time to H% M% S% format
-    pre_df['moving_time'] = pd.to_timedelta(pd.to_datetime(pre_df['moving_time'], unit='s').dt.strftime('%H:%M:%S'))
-    pre_df['elapsed_time'] = pd.to_timedelta(pd.to_datetime(pre_df['elapsed_time'], unit='s').dt.strftime('%H:%M:%S'))
+        def get_gear_data(gear_list: list) -> pd.DataFrame:
+            '''This function gets gear data from Strava API
+            
+            Args:
+                gear_list (array): List of distinct gear ids
+                
+                Returns:
+                    data (DataFrame): Normalized JSON data of gear'''
+                
+            # create empty list to store gear data
+            data = []
+            # loop through gear_list and get gear data
+            for gear_id in gear_list:
+                get_gear = requests.get(gear_url.format(id=gear_id), headers=header).json()
+                data.append(get_gear)
+            return pd.json_normalize(data)
 
-    # convert start_date and start_date_local to datetime
-    pre_df['start_date'] = pd.to_datetime(pd.to_datetime(pre_df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
-    pre_df['start_date_local'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+        # get all gear data
+        gear = get_gear_data(gear_id_list)
 
-    # add start time for analysis and in am/pm format
-    pre_df['start_time_local_24h'] = pd.to_datetime(pre_df['start_date_local']).dt.time
-    pre_df['start_time_local_12h'] = pd.to_datetime(pre_df['start_date_local']).dt.strftime("%I:%M %p")
+        # convert meters to miles
+        gear.distance = gear.distance / 1609.34
 
-    # add day of week
-    pre_df['day_of_week'] = pd.to_datetime(pre_df['start_date_local']).dt.day_name()
+        gear = gear.drop(columns=['converted_distance'])
 
-    # add month
-    pre_df['month'] = pd.to_datetime(pre_df['start_date_local']).dt.month_name()
+        ##### DATA CLEANING AND TRANSFORMATION #####
+        # create base dataframe joining activity and gear data
+        pre_df = pd.merge(activities_df,
+                        gear, 
+                        how='left',
+                        left_on='gear_id',
+                        right_on='id',
+                        suffixes=('_activity', '_gear')).drop(columns='id_gear')
 
-    # add month year
-    pre_df['month_year'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m'))
+        # convert moving_time and elapsed time to H% M% S% format
+        pre_df['moving_time'] = pd.to_timedelta(pd.to_datetime(pre_df['moving_time'], unit='s').dt.strftime('%H:%M:%S'))
+        pre_df['elapsed_time'] = pd.to_timedelta(pd.to_datetime(pre_df['elapsed_time'], unit='s').dt.strftime('%H:%M:%S'))
+
+        # convert start_date and start_date_local to datetime
+        pre_df['start_date'] = pd.to_datetime(pd.to_datetime(pre_df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+        pre_df['start_date_local'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+
+        # add start time for analysis and in am/pm format
+        pre_df['start_time_local_24h'] = pd.to_datetime(pre_df['start_date_local']).dt.time
+        pre_df['start_time_local_12h'] = pd.to_datetime(pre_df['start_date_local']).dt.strftime("%I:%M %p")
+
+        # add day of week
+        pre_df['day_of_week'] = pd.to_datetime(pre_df['start_date_local']).dt.day_name()
+
+        # add month
+        pre_df['month'] = pd.to_datetime(pre_df['start_date_local']).dt.month_name()
+
+        # add month year
+        pre_df['month_year'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m'))
+        
+        # add month year name
+        pre_df['month_year_name'] = pd.to_datetime(pre_df['start_date_local']).dt.strftime('%b %Y')
+
+        # add year label
+        pre_df['year'] = pd.to_datetime(pre_df['start_date_local']).dt.year
+        
+        pre_df.drop(columns=['start_latlng', 'end_latlng'], inplace=True)
     
-    # add month year name
-    pre_df['month_year_name'] = pd.to_datetime(pre_df['start_date_local']).dt.strftime('%b %Y')
-
-    # add year label
-    pre_df['year'] = pd.to_datetime(pre_df['start_date_local']).dt.year
-    
+        status.update(label='Download Complete!', state='complete', expanded=False)
     return pre_df
 
-def refresh_data_button():
+# def refresh_data_button():
     
-    '''This function is used to refresh the data via the button.'''
+#     '''This function is used to refresh the data via the button.'''
         
-    if st.session_state.refresh_counter == 0:
-        return
+#     if st.session_state.refresh_counter == 0:
+#         return
     
-    elif st.session_state.refresh_counter == 1:
-        with st.spinner('Calling Strava API...', show_time=True):
-            # get strava data
-            local_df = get_strava_data()
-            st.session_state.strava_data = local_df
-            # archive the data
-            local_df.to_csv('data/strava_data.csv', index=False)
-            st.success('Data updated successfully!')
-            # save the refresh data and time
-            refresh_datetime = pd.Timestamp.now()
-            refresh_datetime = refresh_datetime.strftime('%Y-%m-%d %I:%M %p')
-            pd.DataFrame({'refresh_datetime': [refresh_datetime]}).to_csv('data/refresh_datetime.csv', index=False)
+#     elif st.session_state.refresh_counter == 1:
+#         with st.spinner('Calling Strava API...', show_time=True):
+#             # get strava data
+#             local_df = get_strava_data()
+#             st.session_state.strava_data = local_df
+#             # archive the data
+#             local_df.to_csv('data/strava_data.csv', index=False)
+#             st.success('Data updated successfully!')
+#             # save the refresh data and time
+#             refresh_datetime = pd.Timestamp.now()
+#             refresh_datetime = refresh_datetime.strftime('%Y-%m-%d %I:%M %p')
+#             pd.DataFrame({'refresh_datetime': [refresh_datetime]}).to_csv('data/refresh_datetime.csv', index=False)
             
-            st.session_state.refresh_counter += 1
+#             st.session_state.refresh_counter += 1
         
-    elif st.session_state.refresh_counter > 1 and st.session_state.refresh_counter < 5:
-        st.info('Data is already refreshed')
+#     elif st.session_state.refresh_counter > 1 and st.session_state.refresh_counter < 5:
+#         st.info('Data is already refreshed')
         
-    else:
-        st.warning("No really, it's refreshed. I promise!")
+#     else:
+#         st.warning("No really, it's refreshed. I promise!")
 
 @st.cache_data()
 def load_data() -> pd.DataFrame:
@@ -201,10 +211,10 @@ def load_data() -> pd.DataFrame:
 
 # load data
 if 'strava_data' not in st.session_state:
-    st.session_state.strava_data = pd.read_csv('data/strava_data.csv')
+    st.session_state.strava_data = get_strava_data()
     
-if 'refresh_counter' not in st.session_state:
-    st.session_state.refresh_counter = 0
+# if 'refresh_counter' not in st.session_state:
+#     st.session_state.refresh_counter = 0
 
 df = load_data()
 
@@ -258,7 +268,7 @@ def default_gear_brand_selection():
     return gear_filter
 
 # rolling 12 mo variable
-last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
+# last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
 today = pd.to_datetime(max_date)
 rolling_12_months = today - pd.DateOffset(months=12)
 
@@ -268,11 +278,11 @@ with st.container():
     st.title('Tom Runs The World')
     st.subheader('Strava Data Analysis')
     st.caption('Last Activity Date: ' + max_date)
-    st.caption('Last Data Refresh: ' + last_refresh)
-    if st.button('Refresh Data'):
-        st.session_state.refresh_counter += 1
-        refresh_data_button()
-        last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
+    # st.caption('Last Data Refresh: ' + last_refresh)
+    # if st.button('Refresh Data'):
+    #     st.session_state.refresh_counter += 1
+    #     refresh_data_button()
+    #     last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
     st.divider()
     
 # filters in sidebar
