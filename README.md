@@ -41,3 +41,4 @@ View the final result
 
 ## Important Notes:
 - Now that you have the correct `refresh_token` for the proper permissions, you **do not need to repeat this process again**.
+- When using Streamlit, create a file in the project `.streamlit/secrets.toml` and input the values from `login.py`
