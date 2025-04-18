@@ -2,14 +2,18 @@ import requests
 import urllib3
 import streamlit as st
 import pandas as pd
+import warnings
+
+from meteostat import Point, Hourly, units
+from concurrent.futures import ThreadPoolExecutor
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 ##### STRAVA API DATA EXTRACTION ####
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 auth_url = 'https://www.strava.com/oauth/token'
-activities_url = 'https://www.strava.com/api/v3/athlete/activities'
-gear_url = 'https://www.strava.com/api/v3/gear/{id}'
 
 payload = {
     'client_id': f'{st.secrets['client_id']}',
@@ -39,6 +43,8 @@ def get_strava_data() -> pd.DataFrame:
             Returns:
                 data (DataFrame): Normalized JSON data of activities'''
                 
+            # set the URL for the Strava API
+            activities_url = 'https://www.strava.com/api/v3/athlete/activities'
             # set value of page to start at page 1
             page = 1
             # create an empty list to store all data
@@ -69,8 +75,6 @@ def get_strava_data() -> pd.DataFrame:
               
         # get all activities data
         activities = get_activities_data()
-
-        st.write('Assembling Activity Data...')
         
         # convert meters to miles
         activities.distance = (activities.distance / 1609.34).round(2)
@@ -83,6 +87,61 @@ def get_strava_data() -> pd.DataFrame:
         activities.elev_low = (activities.elev_low * 3.28084).round(2)
 
         activities_df = pd.DataFrame(activities)
+        
+        def add_weather_data(df: pd.DataFrame, max_workers=20) -> pd.DataFrame:
+            '''This function gets weather data from Meteostat and adds it onto the activities DataFrame
+            
+            Args:
+                df (DataFrame): Activities data frame that uses latitude, longitude, and timestamps to get weather data
+                max_worker (int): Number of threads to use in the multi-threading process
+                
+            Returns:
+                df (DataFrame): Original df with weatehr data appended'''
+                
+            def get_weather(row):
+                '''This function takes the latitude, longitude, and timestamp for each row and calls the Meteostat API for data
+                
+                Args:
+                    row: The row in the DataFrame used in the parent function
+                    
+                Returns:
+                    weather_data (dict): The temperature and relative humidity of the row's activity as a dictionary'''
+                
+                # get the location of the activity
+                location = Point(row['start_latitude'], row['start_longitude'])
+                # get the time of the activity
+                timestamp = pd.to_datetime(row['start_date_local'])
+                # only use the hour it started
+                start = end = timestamp.replace(tzinfo=None, minute=0, second=0, microsecond=0)
+
+                # call meteostat API
+                try:
+                    data = Hourly(location, start, end)
+                    data = data.convert(units.imperial).fetch()
+                    if not data.empty:
+                        # only get the first row of data
+                        weather = data[['temp', 'rhum']].iloc[0]
+                        return {'temp': weather['temp'], 'rhum': weather['rhum']}
+                    else:
+                        return {'temp': None, 'rhum': None}
+                except Exception as e:
+                    print(f"Error fetching weather for {timestamp}: {e}")
+                    return {'temp': None, 'rhum': None}
+                
+            # separate the latitude and longitude from the activity data
+            df[['start_latitude', 'start_longitude']] = pd.DataFrame(df['start_latlng'].tolist(), index=df.index)
+
+            # multi-threading so the function can call the API and iterate through rows faster
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                weather_data = list(executor.map(get_weather, [row for _, row in df.iterrows()]))
+
+            # get the weatehr data and concat the two DataFrames
+            weather_df = pd.DataFrame(weather_data)
+            return pd.concat([df.reset_index(drop=True), weather_df.reset_index(drop=True)], axis=1)
+        
+        st.write('Sprinkling in Weather Data...')
+        
+        activities_df = add_weather_data(activities_df)
 
         # get distinct gear id's
         gear_id_list = activities_df['gear_id'].unique()
@@ -96,7 +155,8 @@ def get_strava_data() -> pd.DataFrame:
                 
                 Returns:
                     data (DataFrame): Normalized JSON data of gear'''
-                
+            # set the URL for the Strava API
+            gear_url = 'https://www.strava.com/api/v3/gear/{id}'
             # create empty list to store gear data
             data = []
             # loop through gear_list and get gear data
@@ -105,6 +165,8 @@ def get_strava_data() -> pd.DataFrame:
                 data.append(get_gear)
             return pd.json_normalize(data)
 
+        st.write('Appending Gear Data...')
+        
         # get all gear data
         gear = get_gear_data(gear_id_list)
 
@@ -149,7 +211,7 @@ def get_strava_data() -> pd.DataFrame:
         # add year label
         pre_df['year'] = pd.to_datetime(pre_df['start_date_local']).dt.year
         
-        pre_df.drop(columns=['start_latlng', 'end_latlng'], inplace=True)
+        pre_df.drop(columns=['start_latlng', 'end_latlng', 'start_latitude', 'start_longitude'], inplace=True)
     
         status.update(label='Data is Served!', state='complete', expanded=False)
         
