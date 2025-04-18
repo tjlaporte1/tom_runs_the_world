@@ -52,7 +52,7 @@ with st.sidebar:
 st.header('Gear Analysis')
 
 # tabs
-tab_act, tab_dist, tab_ele, tab_time = st.tabs(['Activities', 'Distance', 'Elevation', 'Time'])
+tab_act, tab_dist, tab_ele, tab_time, tab_speed, tab_heart, tab_effort = st.tabs(['Activities', 'Distance', 'Elevation', 'Time', 'Speed', 'Heart Rate', 'Relative Effort'])
 
 with tab_act:
     
@@ -145,6 +145,28 @@ with tab_time:
         fig = px.box(temp_df, x='Gear', y='moving_time', labels={'moving_time': 'Time (hrs)'}, points='all')
         st.plotly_chart(fig)
         
+with tab_speed:
+    
+    with st.container():
+        
+        st.subheader('Gear Performance')
+        
+        st.caption('Avg Speed By Gear')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(avg_speed=('average_speed', 'mean')).reset_index().rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand', 'avg_speed': 'Avg Speed'})
+        temp_df['Avg Speed'] = temp_df['Avg Speed'].round(2)
+        st.bar_chart(temp_df, x='Gear', y='Avg Speed', y_label='Avg Speed (mph)', color='Gear', use_container_width=True)
+
+        st.caption('Avg Speed By Gear By Month')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(avg_speed=('average_speed', 'mean')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear', 'avg_speed': 'Avg Speed'})
+        temp_df['Avg Speed'] = temp_df['Avg Speed'].round(2)
+        st.line_chart(temp_df, x='Month', y='Avg Speed', y_label='Avg Speed (mph)', color='Gear', use_container_width=True)
+        
+        # st.caption('Time By Gear (Box Plot)')
+        # temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
+        # temp_df['moving_time'] = (temp_df['moving_time'].dt.total_seconds() / 3600).round(2)
+        # fig = px.box(temp_df, x='Gear', y='moving_time', labels={'moving_time': 'Time (hrs)'}, points='all')
+        # st.plotly_chart(fig)
+        
 st.divider()
 # created gear dataframe
 temp_df = df.groupby(['brand_name', 'name_gear', 'retired']).agg(
@@ -155,6 +177,12 @@ temp_df = df.groupby(['brand_name', 'name_gear', 'retired']).agg(
     Max_Elevation=('total_elevation_gain', 'max'),
     Total_Time=('moving_time', 'sum'),
     Max_Time=('moving_time', 'max'),
+    Avg_Speed=('average_speed', 'mean'),
+    Max_Speed=('max_speed', 'max'),
+    Avg_Heart_Rate=('average_heartrate', 'mean'),
+    Max_Heart_Rate=('max_heartrate', 'max'),
+    Avg_Relative_Effort=('suffer_score', 'mean'),
+    Max_Relative_Effort=('suffer_score', 'max'),
     First_Activity_Date=('start_date_local', 'min'),
     Last_Activity_Date=('start_date_local', 'max')).reset_index().sort_values(by=['retired', 'Last_Activity_Date'],
                                                                               ascending=[True, False]).round(2)
@@ -169,5 +197,21 @@ temp_df.rename(columns={'name_gear': 'Gear'}, inplace=True)
 temp_df.columns = temp_df.columns.str.replace('_', ' ').str.title()
 temp_df.set_index(['Gear'], inplace=True)
 
+# rename coulns and add helpers
+column_config = {
+    'Total Distance': st.column_config.NumberColumn('Total Distnace (mi)'),
+    'Max Distance': st.column_config.NumberColumn('Max Distance (mi)'),
+    'Total Elevation': st.column_config.NumberColumn('Total Elevation (ft)'),
+    'Max Elevation': st.column_config.NumberColumn('Max Elevation (ft)'),
+    'Total Time': st.column_config.NumberColumn('Total Time (hrs)'),
+    'Max Time': st.column_config.NumberColumn('Max Time (hrs)'),
+    'Avg Speed': st.column_config.NumberColumn('Avg Speed (mph)'),
+    'Max Speed': st.column_config.NumberColumn('Max Speed (mph)'),
+    'Avg Heart Rate': st.column_config.NumberColumn('Avg Heart Rate'),
+    'Max Heart Rate': st.column_config.NumberColumn('Max Heart Rate'),
+    'Avg Relative Effort': st.column_config.NumberColumn('Avg Relative Effort', help='Metric that quantifies the cardiovascular work done during an activity'),
+    'Max Relative Effort': st.column_config.NumberColumn('Max Relative Effort', help='Metric that quantifies the cardiovascular work done during an activity')
+}
+
 st.subheader('Gear Data')
-st.dataframe(temp_df)
+st.dataframe(temp_df, column_config=column_config)
