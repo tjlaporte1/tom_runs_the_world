@@ -16,9 +16,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 auth_url = 'https://www.strava.com/oauth/token'
 
 payload = {
-    'client_id': f'{st.secrets['client_id']}',
-    'client_secret': f'{st.secrets['client_secret']}',
-    'refresh_token': f'{st.secrets['refresh_token']}',
+    'client_id': st.secrets['client_id'],
+    'client_secret': st.secrets['client_secret'],
+    'refresh_token': st.secrets['refresh_token'],
     'grant_type': 'refresh_token',
     'f': 'json'
 }
@@ -88,7 +88,7 @@ def get_strava_data() -> pd.DataFrame:
 
         activities_df = pd.DataFrame(activities)
         
-        def add_weather_data(df: pd.DataFrame, max_workers=20) -> pd.DataFrame:
+        def add_weather_data(df: pd.DataFrame, max_workers=30) -> pd.DataFrame:
             '''This function gets weather data from Meteostat and adds it onto the activities DataFrame
             
             Args:
