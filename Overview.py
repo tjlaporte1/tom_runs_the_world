@@ -9,6 +9,9 @@ if 'strava_data' not in st.session_state:
 
 df = fn.load_data()
 
+sidebar_logo = './images/tom_runs_the_world_sidebar.png'
+st.logo(sidebar_logo)
+
 # max date
 max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p').max()
 
