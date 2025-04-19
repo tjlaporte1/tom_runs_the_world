@@ -58,17 +58,15 @@ with tab_act:
     
     with st.container():
         
-        st.subheader('Total Activities')
-        
-        st.caption('Total Activities By Gear Brand')
+        st.subheader('Total Activities By Gear Brand')
         temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'brand_name': 'Gear Brand', 'name_gear': 'Gear'})
         st.bar_chart(temp_df, x='Gear Brand', y='Activities', y_label='# of Activities', color='Gear', use_container_width=True)
         
-        st.caption('Total Activities By Gear')
+        st.subheader('Total Activities By Gear')
         temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
         st.bar_chart(temp_df, x='Gear', y='Activities', y_label='# of Activities', color='Gear', use_container_width=True)
 
-        st.caption('Activities By Gear By Month')
+        st.subheader('Activities By Gear By Month')
         temp_df2 = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).size().reset_index(name='Activities').rename(columns={'month_year': 'Month', 'name_gear': 'Gear'})
         st.line_chart(temp_df2, x='Month', y='Activities', y_label='# of Activities', color='Gear', use_container_width=True)
         
@@ -76,21 +74,19 @@ with tab_dist:
     
     with st.container():
         
-        st.subheader('Total Distance')
-        
-        st.caption('Total Distance By Gear Brand')
+        st.subheader('Total Distance By Gear Brand')
         temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'brand_name': 'Gear Brand', 'name_gear': 'Gear'})
         st.bar_chart(temp_df, x='Gear Brand', y='Distance', y_label='Distance (mi)', color='Gear', use_container_width=True)
         
-        st.caption('Total Distance By Gear')
+        st.subheader('Total Distance By Gear')
         temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
         st.bar_chart(temp_df, x='Gear', y='Distance', y_label='Distance (mi)', color='Gear', use_container_width=True)
 
-        st.caption('Distance By Gear By Month')
+        st.subheader('Distance By Gear By Month')
         temp_df2 = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear'})
         st.line_chart(temp_df2, x='Month', y='Distance', y_label='Distance (mi)', color='Gear', use_container_width=True)
         
-        st.caption('Distance By Gear (Box Plot)')
+        st.subheader('Distance By Gear (Box Plot)')
         temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
         fig = px.box(temp_df, x='Gear', y='distance_activity', labels={'distance_activity': 'Distance (mi)'}, points='all')
         st.plotly_chart(fig)
@@ -99,21 +95,19 @@ with tab_ele:
     
     with st.container():
         
-        st.subheader('Total Elevation')
-        
-        st.caption('Total Elevation By Gear Brand')
+        st.subheader('Total Elevation By Gear Brand')
         temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'brand_name': 'Gear Brand', 'name_gear': 'Gear'})
         st.bar_chart(temp_df, x='Gear Brand', y='Elevation', y_label='Elevation (ft)', color='Gear', use_container_width=True)
         
-        st.caption('Total Elevation By Gear')
+        st.subheader('Total Elevation By Gear')
         temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
         st.bar_chart(temp_df, x='Gear', y='Elevation', y_label='Elevation (ft)', color='Gear', use_container_width=True)
 
-        st.caption('Elevation By Gear By Month')
+        st.subheader('Elevation By Gear By Month')
         temp_df2 = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear'})
         st.line_chart(temp_df2, x='Month', y='Elevation', y_label='Elevation (ft)', color='Gear', use_container_width=True)
         
-        st.caption('Elevation By Gear (Box Plot)')
+        st.subheader('Elevation By Gear (Box Plot)')
         temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
         fig = px.box(temp_df, x='Gear', y='total_elevation_gain', labels={'total_elevation_gain': 'Elevation (ft)'}, points='all')
         st.plotly_chart(fig)
@@ -122,24 +116,22 @@ with tab_time:
     
     with st.container():
         
-        st.subheader('Total Time')
-        
-        st.caption('Total Time By Gear Brand')
+        st.subheader('Total Time By Gear Brand')
         temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'brand_name': 'Gear Brand', 'name_gear': 'Gear'})
         temp_df['Time'] = (temp_df['Time'].dt.total_seconds() / 3600).round(2)
         st.bar_chart(temp_df, x='Gear Brand', y='Time', y_label='Time (hrs)', color='Gear', use_container_width=True)
         
-        st.caption('Total Time By Gear')
+        st.subheader('Total Time By Gear')
         temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
         temp_df['Time'] = (temp_df['Time'].dt.total_seconds() / 3600).round(2)
         st.bar_chart(temp_df, x='Gear', y='Time', y_label='Time (hrs)', color='Gear', use_container_width=True)
 
-        st.caption('Time By Gear By Month')
+        st.subheader('Time By Gear By Month')
         temp_df2 = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear'})
         temp_df2['Time'] = (temp_df2['Time'].dt.total_seconds() / 3600).round(2)
         st.line_chart(temp_df2, x='Month', y='Time', y_label='Time (hrs)', color='Gear', use_container_width=True)
         
-        st.caption('Time By Gear (Box Plot)')
+        st.subheader('Time By Gear (Box Plot)')
         temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
         temp_df['moving_time'] = (temp_df['moving_time'].dt.total_seconds() / 3600).round(2)
         fig = px.box(temp_df, x='Gear', y='moving_time', labels={'moving_time': 'Time (hrs)'}, points='all')
@@ -149,24 +141,56 @@ with tab_speed:
     
     with st.container():
         
-        st.subheader('Gear Performance')
-        
-        st.caption('Avg Speed By Gear')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['brand_name', 'name_gear']).agg(avg_speed=('average_speed', 'mean')).reset_index().rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand', 'avg_speed': 'Avg Speed'})
-        temp_df['Avg Speed'] = temp_df['Avg Speed'].round(2)
-        st.bar_chart(temp_df, x='Gear', y='Avg Speed', y_label='Avg Speed (mph)', color='Gear', use_container_width=True)
+        st.subheader('Avg Speed By Gear')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
+        fig = px.box(temp_df, x='Gear', y='average_speed', labels={'average_speed': 'Avg Speed (mph)'}, points='all')
+        st.plotly_chart(fig)
 
-        st.caption('Avg Speed By Gear By Month')
+        st.subheader('Avg Speed By Gear By Month')
         temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(avg_speed=('average_speed', 'mean')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear', 'avg_speed': 'Avg Speed'})
         temp_df['Avg Speed'] = temp_df['Avg Speed'].round(2)
         st.line_chart(temp_df, x='Month', y='Avg Speed', y_label='Avg Speed (mph)', color='Gear', use_container_width=True)
         
-        # st.caption('Time By Gear (Box Plot)')
-        # temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
-        # temp_df['moving_time'] = (temp_df['moving_time'].dt.total_seconds() / 3600).round(2)
-        # fig = px.box(temp_df, x='Gear', y='moving_time', labels={'moving_time': 'Time (hrs)'}, points='all')
-        # st.plotly_chart(fig)
+        st.subheader('Max Speed By Gear')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
+        fig = px.box(temp_df, x='Gear', y='max_speed', labels={'max_speed': 'Max Speed (mph)'}, points='all')
+        st.plotly_chart(fig)
         
+with tab_heart:
+    
+    with st.container():
+        
+        st.subheader('Avg Heart Rate By Gear')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
+        fig = px.box(temp_df, x='Gear', y='average_heartrate', labels={'average_heartrate': 'Avg Heart Rate'}, points='all')
+        st.plotly_chart(fig)
+
+        st.subheader('Avg Heart Rate By Gear By Month')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(avg_heartrate=('average_heartrate', 'mean')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear', 'avg_heartrate': 'Avg Heart Rate'})
+        temp_df['Avg Heart Rate'] = temp_df['Avg Heart Rate'].round(2)
+        st.line_chart(temp_df, x='Month', y='Avg Heart Rate', y_label='Avg Heart Rate (mph)', color='Gear', use_container_width=True)
+        
+        st.subheader('Max Heart Rate By Gear')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
+        fig = px.box(temp_df, x='Gear', y='max_heartrate', labels={'max_heartrate': 'Max Heart Rate'}, points='all')
+        st.plotly_chart(fig)
+        
+with tab_effort:
+    
+    with st.container():
+        
+        st.caption('Relative Effort: Metric that quantifies the cardiovascular work done during an activity')
+        
+        st.subheader('Realtive Effort By Gear')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
+        fig = px.box(temp_df, x='Gear', y='suffer_score', labels={'suffer_score': 'Realtive Effort'}, points='all')
+        st.plotly_chart(fig)
+
+        st.subheader('Relative Effort By Gear By Month')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(avg_suffer_score=('suffer_score', 'mean')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear', 'avg_suffer_score': 'Avg Relative Effort'})
+        temp_df['Avg Relative Effort'] = temp_df['Avg Relative Effort'].round(2)
+        st.line_chart(temp_df, x='Month', y='Avg Relative Effort', y_label='Avg Relative Effort', color='Gear', use_container_width=True)
+
 st.divider()
 # created gear dataframe
 temp_df = df.groupby(['brand_name', 'name_gear', 'retired']).agg(
