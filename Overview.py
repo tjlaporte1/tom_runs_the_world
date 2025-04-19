@@ -85,63 +85,55 @@ with tab_act:
     
     with st.container():
         
-        st.subheader('Total Activities')
-        
-        st.caption('Activities By Month')
+        st.subheader('Total Activities By Month')
         temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby('month_year', sort=False).size().reset_index(name='Activities').rename(columns={'month_year': 'Month'})
-        st.line_chart(temp_df, x='Month', y='Activities', y_label='# of Activities', use_container_width=True)
+        st.line_chart(temp_df, x='Month', y='Activities', y_label='# of Activities')
         
-        st.caption('Activities By Activity Type')
-        temp_df2 = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).size().reset_index(name='Activities').rename(columns={'month_year': 'Month', 'type': 'Activity Type'})
-        st.line_chart(temp_df2, x='Month', y='Activities', y_label='# of Activities', color='Activity Type', use_container_width=True)
+        st.subheader('Activities By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).size().reset_index(name='Activities').rename(columns={'month_year': 'Month', 'type': 'Activity Type'})
+        st.line_chart(temp_df, x='Month', y='Activities', y_label='# of Activities', color='Activity Type')
 
 # distance tab
 with tab_dist:
     
     with st.container():
         
-        st.subheader('Total Distance')
-        
-        st.caption('Distance By Month')
+        st.subheader('Total Distance By Month')
         temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby('month_year', sort=False).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'month_year': 'Month'})
         temp_df['Distance'] = temp_df['Distance'].round(2)
-        st.line_chart(temp_df, x='Month', y='Distance', y_label='Distance (mi)', color=None, use_container_width=True)
+        st.line_chart(temp_df, x='Month', y='Distance', y_label='Distance (mi)')
         
-        st.caption('Distance By Activity Type')
-        temp_df2 = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'type': 'Activity Type'})
-        temp_df2['Distance'] = temp_df2['Distance'].round(2)
-        st.line_chart(temp_df2, x='Month', y='Distance', y_label='Distance (mi)', color='Activity Type', use_container_width=True)
+        st.subheader('Total Distance By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'type': 'Activity Type'})
+        temp_df['Distance'] = temp_df['Distance'].round(2)
+        st.line_chart(temp_df, x='Month', y='Distance', y_label='Distance (mi)', color='Activity Type')
  
 # elevation tab
 with tab_ele:
     
     with st.container():
         
-        st.subheader('Total Elevation')
-        
-        st.caption('Elevation By Month')
+        st.subheader('Total Elevation By Month')
         temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby('month_year', sort=False).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'month_year': 'Month'})
         temp_df['Elevation'] = temp_df['Elevation'].round(2).astype(int)
-        st.line_chart(temp_df, x='Month', y='Elevation', y_label='Elevation (ft)', color=None, use_container_width=True)
+        st.line_chart(temp_df, x='Month', y='Elevation', y_label='Elevation (ft)')
         
-        st.caption('Elevation By Activity Type')
-        temp_df2 = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'type': 'Activity Type'})
-        temp_df2['Elevation'] = temp_df2['Elevation'].round(2).astype(int)
-        st.line_chart(temp_df2, x='Month', y='Elevation', y_label='Elevation (ft)', color='Activity Type', use_container_width=True)
+        st.subheader('Total Elevation By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'type': 'Activity Type'})
+        temp_df['Elevation'] = temp_df['Elevation'].round(2).astype(int)
+        st.line_chart(temp_df, x='Month', y='Elevation', y_label='Elevation (ft)', color='Activity Type')
         
 # time tab       
 with tab_time:
     
     with st.container():
         
-        st.subheader('Total Time')
-        
-        st.caption('Time By Month')
+        st.subheader('Total Time By Month')
         temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby('month_year', sort=False).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'month_year': 'Month'})
         temp_df['Time'] = (temp_df['Time'].dt.total_seconds() / 3600).round(2)
-        st.line_chart(temp_df, x='Month', y='Time', y_label='Time (hrs)', color=None, use_container_width=True)
+        st.line_chart(temp_df, x='Month', y='Time', y_label='Time (hrs)')
         
-        st.caption('Time By Activity Type')
-        temp_df2 = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'type': 'Activity Type'})
-        temp_df2['Time'] = (temp_df2['Time'].dt.total_seconds() / 3600).round(2)
-        st.line_chart(temp_df2, x='Month', y='Time', y_label='Time (hrs)', color='Activity Type', use_container_width=True)
+        st.subheader('Total Time By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type'], sort=False).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'month_year': 'Month', 'type': 'Activity Type'})
+        temp_df['Time'] = (temp_df['Time'].dt.total_seconds() / 3600).round(2)
+        st.line_chart(temp_df, x='Month', y='Time', y_label='Time (hrs)', color='Activity Type')
