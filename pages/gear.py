@@ -7,6 +7,7 @@ import functions as fn
 df = fn.load_data()
 
 sidebar_logo = './images/tom_runs_the_world_sidebar.png'
+title_logo = './images/tom_runs_the_world_title.png'
 st.logo(sidebar_logo)
 
 max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p').max()
@@ -30,7 +31,7 @@ rolling_12_months = today - pd.DateOffset(months=12)
 
 # header
 with st.container():
-    st.title('Tom Runs The World')
+    st.image(title_logo)
     st.subheader('Strava Data Analysis')
     st.caption('Last Activity Date: ' + max_date)
     st.divider()

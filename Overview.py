@@ -10,6 +10,7 @@ if 'strava_data' not in st.session_state:
 df = fn.load_data()
 
 sidebar_logo = './images/tom_runs_the_world_sidebar.png'
+title_logo = './images/tom_runs_the_world_title.png'
 st.logo(sidebar_logo)
 
 # max date
@@ -36,7 +37,7 @@ rolling_12_months = today - pd.DateOffset(months=12)
 ##### STREAMLIT DASHBOARD #####
 # page header
 with st.container():
-    st.title('Tom Runs The World')
+    st.image(title_logo)
     st.subheader('Strava Data Analysis')
     st.caption('Last Activity Date: ' + max_date)
     st.divider()
