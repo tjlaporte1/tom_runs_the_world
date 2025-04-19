@@ -119,19 +119,11 @@ def get_strava_data() -> pd.DataFrame:
                     data = Hourly(location, start, end)
                     data = data.convert(units.imperial).fetch()
                     if not data.empty:
+                        # only get the first row of data
                         weather = data[['temp', 'rhum']].iloc[0]
                         return {'temp': weather['temp'], 'rhum': weather['rhum']}
                     else:
-                        # Fallback to daily data
-                        start_day = end_day = pd.to_datetime(timestamp.date())
-                        daily_data = Daily(location, start_day, end_day)
-                        daily_data = daily_data.convert(units.imperial).fetch()
-
-                        if not daily_data.empty:
-                            daily_weather = daily_data[['tavg', 'rhum']].iloc[0]
-                            return {'temp': daily_weather['tavg'], 'rhum': daily_weather['rhum']}
-                        else:
-                            return {'temp': None, 'rhum': None}
+                        return {'temp': None, 'rhum': None}
                 except Exception as e:
                     print(f"Error fetching weather for {timestamp}: {e}")
                     return {'temp': None, 'rhum': None}
