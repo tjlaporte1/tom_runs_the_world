@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 import warnings
 
-from meteostat import Point, Daily, Hourly, units
+from meteostat import Point, Hourly, units
 from concurrent.futures import ThreadPoolExecutor
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -137,6 +137,7 @@ def get_strava_data() -> pd.DataFrame:
 
             # get the weatehr data and concat the two DataFrames
             weather_df = pd.DataFrame(weather_data)
+            Hourly.clear_cache()
             return pd.concat([df.reset_index(drop=True), weather_df.reset_index(drop=True)], axis=1)
         
         st.write('Sprinkling in Weather Data...')
