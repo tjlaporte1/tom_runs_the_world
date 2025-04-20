@@ -58,28 +58,27 @@ st.header('Timing')
 tab_month, tab_day, tab_time = st.tabs(['Month', 'Day', 'Time of Day'])
 
 with tab_month:
-    # TODO working on sorting
+    
     with st.container():
         
         st.subheader('Total Activities By Month By Activity Type')
         st.caption('Best results when using all years available in filter')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='month_num').groupby(['month_num', 'month', 'type'], sort=False).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'month': 'Month', 'type': 'Activity Type'})
-        temp_df['Month'] = temp_df['month_num'].astype(str) + '-' + temp_df['Month']
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['monthly_date', 'type']).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'monthly_date': 'Month', 'type': 'Activity Type'})
         st.bar_chart(temp_df, x='Month', y='Activities', color='Activity Type')
         
         st.subheader('Total Distance By Month By Activity Type')
         st.caption('Best results when using all years available in filter')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['month', 'type']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'month': 'Month', 'type': 'Activity Type'})
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['monthly_date', 'type']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'monthly_date': 'Month', 'type': 'Activity Type'})
         st.bar_chart(temp_df, x='Month', y='Distance', y_label='Distance (mi)', color='Activity Type')
         
         st.subheader('Total Elevation By Month By Activity Type')
         st.caption('Best results when using all years available in filter')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['month', 'type']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'month': 'Month', 'type': 'Activity Type'})
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['monthly_date', 'type']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'monthly_date': 'Month', 'type': 'Activity Type'})
         st.bar_chart(temp_df, x='Month', y='Elevation', y_label='Elevation (ft)', color='Activity Type')
         
         st.subheader('Total Time By Month By Activity Type')
         st.caption('Best results when using all years available in filter')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['month', 'type']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'month': 'Month', 'type': 'Activity Type'})
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['monthly_date', 'type']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'monthly_date': 'Month', 'type': 'Activity Type'})
         temp_df['Time'] = (temp_df['Time'].dt.total_seconds() / 3600).round(2)
         st.bar_chart(temp_df, x='Month', y='Time', y_label='Time (hrs)', color='Activity Type')
         
@@ -88,18 +87,43 @@ with tab_day:
     with st.container():
         
         st.subheader('Total Activities By Weekday By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['weekday', 'type']).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'weekday': 'Weekday', 'type': 'Activity Type'})
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h', 'type']).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'start_time_local_24h': 'Weekday', 'type': 'Activity Type'})
+        temp_df['Weekday'] = temp_df['weekday_num'].astype(str) + '-' + temp_df['Weekday']
         st.bar_chart(temp_df, x='Weekday', y='Activities', color='Activity Type')
         
         st.subheader('Total Distance By Weekday By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['weekday', 'type']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'weekday': 'Weekday', 'type': 'Activity Type'})
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h', 'type']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'start_time_local_24h': 'Weekday', 'type': 'Activity Type'})
+        temp_df['Weekday'] = temp_df['weekday_num'].astype(str) + '-' + temp_df['Weekday']
         st.bar_chart(temp_df, x='Weekday', y='Distance', y_label='Distance (mi)', color='Activity Type')
         
         st.subheader('Total Elevation By Weekday By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['weekday', 'type']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'weekday': 'Weekday', 'type': 'Activity Type'})
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h', 'type']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'start_time_local_24h': 'Weekday', 'type': 'Activity Type'})
+        temp_df['Weekday'] = temp_df['weekday_num'].astype(str) + '-' + temp_df['Weekday']
         st.bar_chart(temp_df, x='Weekday', y='Elevation', y_label='Elevation (ft)', color='Activity Type')
         
         st.subheader('Total Time By Weekday By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['weekday', 'type']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'weekday': 'Weekday', 'type': 'Activity Type'})
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h', 'type']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'start_time_local_24h': 'Weekday', 'type': 'Activity Type'})
         temp_df['Time'] = (temp_df['Time'].dt.total_seconds() / 3600).round(2)
+        temp_df['Weekday'] = temp_df['weekday_num'].astype(str) + '-' + temp_df['Weekday']
         st.bar_chart(temp_df, x='Weekday', y='Time', y_label='Time (hrs)', color='Activity Type')
+        
+with tab_time:
+    
+    with st.container():
+        
+        st.subheader('Total Activities By Time of Day By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h', 'type']).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'start_time_local_24h': 'Time of Day', 'type': 'Activity Type'})
+        st.bar_chart(temp_df, x='Time of Day', y='Activities', color='Activity Type')
+        
+        st.subheader('Total Distance By Time of Day By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h', 'type']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'start_time_local_24h': 'Time of Day', 'type': 'Activity Type'})
+        st.bar_chart(temp_df, x='Time of Day', y='Distance', y_label='Distance (mi)', color='Activity Type')
+        
+        st.subheader('Total Elevation By Time of Day By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h', 'type']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'start_time_local_24h': 'Time of Day', 'type': 'Activity Type'})
+        st.bar_chart(temp_df, x='Time of Day', y='Elevation', y_label='Elevation (ft)', color='Activity Type')
+        
+        st.subheader('Total Time By Time of Day By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h', 'type']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'start_time_local_24h': 'Time of Day', 'type': 'Activity Type'})
+        temp_df['Time'] = (temp_df['Time'].dt.total_seconds() / 3600).round(2)
+        st.bar_chart(temp_df, x='Time of Day', y='Time', y_label='Time (hrs)', color='Activity Type')
