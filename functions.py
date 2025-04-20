@@ -68,8 +68,11 @@ def get_strava_data() -> pd.DataFrame:
                 page += 1
 
                 if page > 20:
-                    print('Stopping after 20 pages to avoid excessive API calls')
-                    break
+                    print('Stopping after 20 pages to avoid excessive API calls. Loading from backup...')
+                    #backup file
+                    data = pd.read_pickle('./data/activity_data_backup.pkl')
+                    
+                    return data
                 
             return pd.json_normalize(data)
               
