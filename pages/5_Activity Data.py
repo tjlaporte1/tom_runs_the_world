@@ -74,7 +74,7 @@ selected_columns = [
     'suffer_score',
     'temp',
     'rhum',
-    'day_of_week'
+    'weekday'
 ]
 
 temp_df = df[selected_columns].copy()
@@ -103,7 +103,7 @@ column_config = {
     'suffer_score': st.column_config.NumberColumn('Relative Effort', help='Metric that quantifies the cardiovascular work done during an activity'),
     'temp': st.column_config.NumberColumn('Temperature (°F)'),
     'rhum': st.column_config.NumberColumn('Relative Humidity (%)', format="%.0f%%"),
-    'day_of_week': st.column_config.TextColumn('Day of Week')
+    'weekday': st.column_config.TextColumn('Weekday')
     
 }
 
