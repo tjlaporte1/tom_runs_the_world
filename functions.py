@@ -202,7 +202,7 @@ def get_strava_data() -> pd.DataFrame:
 
         # add day of week
         pre_df['weekday'] = pd.to_datetime(pre_df['start_date_local']).dt.day_name()
-        pre_df['weekday'] = pd.to_datetime(pre_df['start_date_local']).dt.weekday
+        pre_df['weekday_num'] = pd.to_datetime(pre_df['start_date_local']).dt.weekday
 
         # add month
         pre_df['month'] = pd.to_datetime(pre_df['start_date_local']).dt.month_name()
