@@ -64,7 +64,8 @@ with tab_month:
         st.subheader('Total Activities By Month By Activity Type')
         st.caption('Best results when using all years available in filter')
         temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='month_num').groupby(['month_num', 'month', 'type'], sort=False).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'month': 'Month', 'type': 'Activity Type'})
-        st.bar_chart(temp_df, x='month_num', y='Activities', color='Activity Type')
+        temp_df['Month'] = temp_df['month_num'].astype(str) + '-' + temp_df['Month']
+        st.bar_chart(temp_df, x='Month', y='Activities', color='Activity Type')
         
         st.subheader('Total Distance By Month By Activity Type')
         st.caption('Best results when using all years available in filter')
