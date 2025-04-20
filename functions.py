@@ -68,16 +68,17 @@ def get_strava_data() -> pd.DataFrame:
                 page += 1
 
                 if page > 20:
-                    print('Stopping after 20 pages to avoid excessive API calls. Loading from backup...')
-                    #backup file
-                    data = pd.read_pickle('./data/activity_data_backup.pkl')
+                    print('Stopping after 20 pages to avoid excessive API calls.')
                     
-                    return data
+                    return None
                 
             return pd.json_normalize(data)
               
         # get all activities data
         activities = get_activities_data()
+        
+        if activities.empty:
+            return pd.read_pickle('./data/full_data_backup.pkl')
         
         # convert meters to miles
         activities.distance = (activities.distance / 1609.34).round(2)
@@ -207,6 +208,7 @@ def get_strava_data() -> pd.DataFrame:
         # add month
         pre_df['month'] = pd.to_datetime(pre_df['start_date_local']).dt.month_name()
         pre_df['month_num'] = pd.to_datetime(pre_df['start_date_local']).dt.month
+        pre_df['monthly_date'] = pre_df['start_date_local'].apply(lambda x: x.replace(year=2025))
 
         # add month year
         pre_df['month_year'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m'))
@@ -221,7 +223,7 @@ def get_strava_data() -> pd.DataFrame:
     
         status.update(label='Data is Served!', state='complete', expanded=False)
         
-    return pre_df
+        return pre_df
 
 @st.cache_data()
 def load_data() -> pd.DataFrame:
