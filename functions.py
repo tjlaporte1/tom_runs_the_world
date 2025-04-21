@@ -199,6 +199,7 @@ def get_strava_data() -> pd.DataFrame:
 
         # add start time for analysis and in am/pm format
         pre_df['start_time_local_24h'] = pd.to_datetime(pre_df['start_date_local']).dt.time
+        pre_df['start_time_local_24h_hour'] = pd.to_datetime(pre_df['start_date_local']).dt.round('H').dt.hour
         pre_df['start_time_local_12h'] = pd.to_datetime(pre_df['start_date_local']).dt.strftime("%I:%M %p")
 
         # add day of week
