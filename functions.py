@@ -77,7 +77,7 @@ def get_strava_data() -> pd.DataFrame:
         # get all activities data
         activities = get_activities_data()
         
-        if activities.empty:
+        if activities == None:
             return pd.read_pickle('./data/full_data_backup.pkl')
         
         # convert meters to miles
