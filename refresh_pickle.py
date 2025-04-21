@@ -65,7 +65,6 @@ def get_strava_data() -> pd.DataFrame:
 
             if page > 20:
                 print('Stopping after 20 pages to avoid excessive API calls')
-                # TODO add backup csv file to load if the API breaks
                 break
             
         return pd.read_pickle('./data/activity_data_backup.pkl')
