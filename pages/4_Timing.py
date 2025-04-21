@@ -111,19 +111,19 @@ with tab_time:
     
     with st.container():
         
-        st.subheader('Total Activities By Time of Day By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h_hour', 'type']).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'start_time_local_24h_hour': 'Time of Day', 'type': 'Activity Type'})
-        st.bar_chart(temp_df, x='Time of Day', y='Activities', color='Activity Type')
+        st.subheader('Total Activities By Hour By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h_hour', 'type']).agg(Activities=('upload_id', 'count')).reset_index().rename(columns={'start_time_local_24h_hour': 'Hour', 'type': 'Activity Type'})
+        st.bar_chart(temp_df, x='Hour', y='Activities', color='Activity Type')
         
-        st.subheader('Total Distance By Time of Day By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h_hour', 'type']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'start_time_local_24h_hour': 'Time of Day', 'type': 'Activity Type'})
-        st.bar_chart(temp_df, x='Time of Day', y='Distance', y_label='Distance (mi)', color='Activity Type')
+        st.subheader('Total Distance By Hour By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h_hour', 'type']).agg(Distance=('distance_activity', 'sum')).reset_index().rename(columns={'start_time_local_24h_hour': 'Hour', 'type': 'Activity Type'})
+        st.bar_chart(temp_df, x='Hour', y='Distance', y_label='Distance (mi)', color='Activity Type')
         
-        st.subheader('Total Elevation By Time of Day By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h_hour', 'type']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'start_time_local_24h_hour': 'Time of Day', 'type': 'Activity Type'})
-        st.bar_chart(temp_df, x='Time of Day', y='Elevation', y_label='Elevation (ft)', color='Activity Type')
+        st.subheader('Total Elevation By Hour By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h_hour', 'type']).agg(Elevation=('total_elevation_gain', 'sum')).reset_index().rename(columns={'start_time_local_24h_hour': 'Hour', 'type': 'Activity Type'})
+        st.bar_chart(temp_df, x='Hour', y='Elevation', y_label='Elevation (ft)', color='Activity Type')
         
-        st.subheader('Total Time By Time of Day By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h_hour', 'type']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'start_time_local_24h_hour': 'Time of Day', 'type': 'Activity Type'})
+        st.subheader('Total Time By Hour By Activity Type')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).groupby(['start_time_local_24h_hour', 'type']).agg(Time=('moving_time', 'sum')).reset_index().rename(columns={'start_time_local_24h_hour': 'Hour', 'type': 'Activity Type'})
         temp_df['Time'] = (temp_df['Time'].dt.total_seconds() / 3600).round(2)
-        st.bar_chart(temp_df, x='Time of Day', y='Time', y_label='Time (hrs)', color='Activity Type')
+        st.bar_chart(temp_df, x='Hour', y='Time', y_label='Time (hrs)', color='Activity Type')
