@@ -208,7 +208,7 @@ def get_strava_data() -> pd.DataFrame:
         # add month
         pre_df['month'] = pd.to_datetime(pre_df['start_date_local']).dt.month_name()
         pre_df['month_num'] = pd.to_datetime(pre_df['start_date_local']).dt.month
-        pre_df['monthly_date'] = pre_df['start_date_local'].apply(lambda x: x.replace(year=2025))
+        pre_df['monthly_date'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m')).apply(lambda x: x.replace(year=2025))
 
         # add month year
         pre_df['month_year'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m'))
