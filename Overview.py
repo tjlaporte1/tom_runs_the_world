@@ -3,21 +3,25 @@ import streamlit as st
 
 import functions as fn
 
+# load data
+if 'strava_data' not in st.session_state:
+    st.session_state.strava_data = pd.read_pickle('./data/full_data_backup.pkl')
 
 sidebar_logo = './images/tom_runs_the_world_sidebar.png'
 title_logo = './images/tom_runs_the_world_title.png'
 st.logo(sidebar_logo)   
 st.image(title_logo)
 st.subheader('Strava Data Analysis')
-
-# load data
-if 'strava_data' not in st.session_state:
-    st.session_state.strava_data = fn.get_strava_data()
+    
+if st.button('Refresh Data', help='Refresh data from Strava API'):
+    refreshed_df = fn.get_strava_data()
+    st.session_state.strava_data = refreshed_df
+    fn.upload_dataframe_to_github(refreshed_df)
 
 df = fn.load_data()
 
 # max date
-max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p').max()
+refresh_date = df['Refresh Date'].max()
 
 # distict activity type list
 highlighted_activities = ['Run', 'Hike', 'Walk', 'Ride']
@@ -34,11 +38,13 @@ gear_brand_list = df['brand_name'].value_counts().index.tolist()
 
 # rolling 12 mo variable
 # last_refresh = pd.read_csv('data/refresh_datetime.csv').iloc[0, 0]
+max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p').max()
 today = pd.to_datetime(max_date)
 rolling_12_months = today - pd.DateOffset(months=12)
 
 ##### STREAMLIT DASHBOARD #####
 # page header
+st.caption('Last Refreshed: ' + refresh_date)
 st.caption('Last Activity Date: ' + max_date)
 st.divider()
     
