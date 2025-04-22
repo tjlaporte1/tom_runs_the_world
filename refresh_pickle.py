@@ -67,7 +67,7 @@ def get_strava_data() -> pd.DataFrame:
                 print('Stopping after 20 pages to avoid excessive API calls')
                 break
             
-        return pd.read_pickle('./data/activity_data_backup.pkl')
+        return pd.json_normalize(data)
             
     # get all activities data
     activities = get_activities_data()
@@ -206,10 +206,13 @@ def get_strava_data() -> pd.DataFrame:
     # add year label
     pre_df['year'] = pd.to_datetime(pre_df['start_date_local']).dt.year
     
+    #add timestamp
+    pre_df['Refresh Date'] = pd.Timestamp.now().strftime('%Y-%m-%d %I:%M %p')
+    
     pre_df.drop(columns=['start_latlng', 'end_latlng', 'start_latitude', 'start_longitude'], inplace=True)
     
     return pre_df
 
 activity_data_backup = get_strava_data()
-activity_data_backup.to_pickle('./data/full_data_backup.pkl')
+activity_data_backup.to_pickle('data/full_data_backup.pkl')
 print("Full backup file saved in data folder.")
