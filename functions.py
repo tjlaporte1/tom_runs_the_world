@@ -3,6 +3,8 @@ import urllib3
 import streamlit as st
 import pandas as pd
 import warnings
+import base64
+import io
 
 from meteostat import Point, Hourly, units
 from concurrent.futures import ThreadPoolExecutor
@@ -70,14 +72,17 @@ def get_strava_data() -> pd.DataFrame:
                 if page > 20:
                     print('Stopping after 20 pages to avoid excessive API calls.')
                     
-                    return None
+                    return pd.DataFrame()
                 
             return pd.json_normalize(data)
               
         # get all activities data
         activities = get_activities_data()
         
-        if activities == None:
+        if activities.empty:
+            
+            status.update(label='Cannot refresh. Data loaded from backup!', state='complete', expanded=False)
+            
             return pd.read_pickle('./data/full_data_backup.pkl')
         
         # convert meters to miles
@@ -134,10 +139,19 @@ def get_strava_data() -> pd.DataFrame:
                 
             # separate the latitude and longitude from the activity data
             df[['start_latitude', 'start_longitude']] = pd.DataFrame(df['start_latlng'].tolist(), index=df.index)
+            
+            # Prepare rows
+            rows = [row for _, row in df.iterrows()]
+            max_rows = len(rows)
+
+            progress_bar = st.progress(0)
 
             # multi-threading so the function can call the API and iterate through rows faster
+            weather_data = []
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                weather_data = list(executor.map(get_weather, [row for _, row in df.iterrows()]))
+                for i, result in enumerate(executor.map(get_weather, rows)):
+                    weather_data.append(result)
+                    progress_bar.progress((i + 1) / max_rows)
 
             # get the weatehr data and concat the two DataFrames
             weather_df = pd.DataFrame(weather_data)
@@ -220,11 +234,62 @@ def get_strava_data() -> pd.DataFrame:
         # add year label
         pre_df['year'] = pd.to_datetime(pre_df['start_date_local']).dt.year
         
+        #add timestamp
+        pre_df['Refresh Date'] = pd.Timestamp.now().strftime('%Y-%m-%d %I:%M %p')
+        
         pre_df.drop(columns=['start_latlng', 'end_latlng', 'start_latitude', 'start_longitude'], inplace=True)
     
         status.update(label='Data is Served!', state='complete', expanded=False)
         
         return pre_df
+    
+
+def upload_dataframe_to_github(df: pd.DataFrame) -> None:
+    '''This function takes the dataframe that is being used on the Streamlit app and commits it to Github to be used the next time
+    the app is loaded
+    
+    Args:
+        df (DataFrame): Dataframe being used in the Streamlit app'''
+    # Save DataFrame to a binary buffer as a pickle
+    buffer = io.BytesIO()
+    df.to_pickle(buffer)
+    buffer.seek(0)  # Go to the beginning of the buffer
+
+    # Encode the binary content to base64 as required by GitHub API
+    encoded_content = base64.b64encode(buffer.read()).decode()
+
+    # GitHub API URL for creating/updating a file
+    url = f"https://api.github.com/repos/tjlaporte1/tom_runs_the_world/contents/data/full_data_backup.pkl"
+
+    # Headers including authentication
+    headers = {
+        "Authorization": f"token {st.secrets['github_token']}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    # Check if the file already exists to get its SHA (needed for updates)
+    r = requests.get(url, headers=headers)
+    sha = r.json().get('sha') if r.status_code == 200 else None
+    
+    commit_message = 'Data updated as of ' + df['Refresh Date'].max()
+
+    # Build the payload
+    payload = {
+        "message": commit_message,
+        "content": encoded_content,
+        "branch": "main"
+    }
+    if sha:
+        payload["sha"] = sha
+
+    # Upload the file
+    r = requests.put(url, headers=headers, json=payload)
+
+    # Handle response
+    if r.status_code in [200, 201]:
+        return "Upload successful!"
+    else:
+        return f"Upload failed: {r.status_code} - {r.text}"
 
 @st.cache_data()
 def load_data() -> pd.DataFrame:
@@ -236,19 +301,19 @@ def load_data() -> pd.DataFrame:
     df = pd.DataFrame(st.session_state.strava_data)
     
     # convert moving_time and elapsed time to H% M% S% format
-    df['moving_time'] = pd.to_timedelta(df['moving_time'])
-    df['elapsed_time'] = pd.to_timedelta(df['elapsed_time'])
+    # df['moving_time'] = pd.to_timedelta(df['moving_time'])
+    # df['elapsed_time'] = pd.to_timedelta(df['elapsed_time'])
     
-    # convert start_date and start_date_local to datetime
-    df['start_date'] = pd.to_datetime(pd.to_datetime(df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
-    df['start_date_local'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+    # # convert start_date and start_date_local to datetime
+    # df['start_date'] = pd.to_datetime(pd.to_datetime(df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+    # df['start_date_local'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
     
-    # add start time for analysis and in am/pm format
-    df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.time
-    df['start_time_local_12h'] = pd.to_datetime(df['start_date_local']).dt.strftime("%I:%M %p")
+    # # add start time for analysis and in am/pm format
+    # df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.time
+    # df['start_time_local_12h'] = pd.to_datetime(df['start_date_local']).dt.strftime("%I:%M %p")
 
-    # add month year
-    df['month_year'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m'))
+    # # add month year
+    # df['month_year'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m'))
     
     return df
 
