@@ -250,11 +250,13 @@ def get_data_from_database() -> pd.DataFrame:
         df (DataFrame): Dataframe loaded from table'''
         
     # Connection string with sslmode=require
-    DATABASE_URL = f'postgresql://postgres:{st.secrets['supabase_password']}@db.rlwosuyzjswobfxwipdr.supabase.co:5432/postgres'
+    DATABASE_URL = f'postgresql+psycopg2://postgres:{st.secrets['supabase_password']}@db.rlwosuyzjswobfxwipdr.supabase.co:5432/postgres'
 
     # Add connect_args to enforce SSL
     engine = create_engine(
         DATABASE_URL,
+        pool_size=5,
+        max_overflow=0,
         connect_args={"sslmode": "require"}
     )
 
