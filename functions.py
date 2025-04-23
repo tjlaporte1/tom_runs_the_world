@@ -280,10 +280,10 @@ def send_data_to_database(df: pd.DataFrame) -> None:
     # deletes current table
     with engine.begin() as conn:
         # Clear the table without dropping it
-        conn.execute(text("DELETE FROM tom_runs_the_world.tdata_fact"))
+        conn.execute(text('DELETE FROM tom_runs_the_world.tdata_fact'))
 
     # This will DROP and RECREATE the table (not just delete rows)
-    df.to_sql("tom_runs_the_world.tdata_fact", engine, if_exists="append", index=False)
+    df.to_sql('tdata_fact', engine, if_exists='append', index=False, schema='tom_runs_the_world')
 
 @st.cache_data()
 def load_data() -> pd.DataFrame:
