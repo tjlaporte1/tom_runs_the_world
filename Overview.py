@@ -16,7 +16,7 @@ st.subheader('Strava Data Analysis')
 if st.button('Refresh Data', help='Refresh data from Strava API'):
     refreshed_df = fn.get_strava_data()
     st.session_state.strava_data = refreshed_df
-    fn.upload_dataframe_to_github(refreshed_df)
+    fn.send_data_to_database(refreshed_df)
 
 df = fn.load_data()
 

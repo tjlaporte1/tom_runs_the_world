@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 import warnings
 from sqlalchemy import create_engine
+from sqlalchemy import text
 
 from meteostat import Point, Hourly, units
 from concurrent.futures import ThreadPoolExecutor
@@ -261,6 +262,29 @@ def get_data_from_database() -> pd.DataFrame:
     
     return df
 
+def send_data_to_database(df: pd.DataFrame) -> None:
+    '''This function replaces the data in the database table with the new Strava API data
+    
+    Args:
+        df (DataFrame): DataFrame to send to the table'''
+        
+    # Connection string with sslmode=require
+    DATABASE_URL = f'postgresql://postgres:{st.secrets['supabase_password']}@db.rlwosuyzjswobfxwipdr.supabase.co:5432/postgres'
+
+    # Add connect_args to enforce SSL
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"sslmode": "require"}
+    )
+    
+    # deletes current table
+    with engine.begin() as conn:
+        # Clear the table without dropping it
+        conn.execute(text("DELETE FROM tom_runs_the_world.tdata_fact"))
+
+    # This will DROP and RECREATE the table (not just delete rows)
+    df.to_sql("tom_runs_the_world.tdata_fact", engine, if_exists="append", index=False)
+
 @st.cache_data()
 def load_data() -> pd.DataFrame:
     
@@ -376,49 +400,49 @@ def convert_timedelta(td: pd.Timedelta) -> str:
     minutes, seconds = divmod(remainder, 60)
     return f"{hours} hrs {minutes} min"
 
-def upload_dataframe_to_github(df: pd.DataFrame) -> None:
-    '''This function takes the dataframe that is being used on the Streamlit app and commits it to Github to be used the next time
-    the app is loaded
+# def upload_dataframe_to_github(df: pd.DataFrame) -> None:
+#     '''This function takes the dataframe that is being used on the Streamlit app and commits it to Github to be used the next time
+#     the app is loaded
     
-    Args:
-        df (DataFrame): Dataframe being used in the Streamlit app'''
-    # Save DataFrame to a binary buffer as a pickle
-    buffer = io.BytesIO()
-    df.to_pickle(buffer)
-    buffer.seek(0)  # Go to the beginning of the buffer
+#     Args:
+#         df (DataFrame): Dataframe being used in the Streamlit app'''
+#     # Save DataFrame to a binary buffer as a pickle
+#     buffer = io.BytesIO()
+#     df.to_pickle(buffer)
+#     buffer.seek(0)  # Go to the beginning of the buffer
 
-    # Encode the binary content to base64 as required by GitHub API
-    encoded_content = base64.b64encode(buffer.read()).decode()
+#     # Encode the binary content to base64 as required by GitHub API
+#     encoded_content = base64.b64encode(buffer.read()).decode()
 
-    # GitHub API URL for creating/updating a file
-    url = f"https://api.github.com/repos/tjlaporte1/tom_runs_the_world/contents/data/full_data_backup.pkl"
+#     # GitHub API URL for creating/updating a file
+#     url = f"https://api.github.com/repos/tjlaporte1/tom_runs_the_world/contents/data/full_data_backup.pkl"
 
-    # Headers including authentication
-    headers = {
-        "Authorization": f"token {st.secrets['github_token']}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+#     # Headers including authentication
+#     headers = {
+#         "Authorization": f"token {st.secrets['github_token']}",
+#         "Accept": "application/vnd.github.v3+json"
+#     }
 
-    # Check if the file already exists to get its SHA (needed for updates)
-    r = requests.get(url, headers=headers)
-    sha = r.json().get('sha') if r.status_code == 200 else None
+#     # Check if the file already exists to get its SHA (needed for updates)
+#     r = requests.get(url, headers=headers)
+#     sha = r.json().get('sha') if r.status_code == 200 else None
     
-    commit_message = 'Data updated as of ' + df['Refresh Date'].max()
+#     commit_message = 'Data updated as of ' + df['Refresh Date'].max()
 
-    # Build the payload
-    payload = {
-        "message": commit_message,
-        "content": encoded_content,
-        "branch": "main"
-    }
-    if sha:
-        payload["sha"] = sha
+#     # Build the payload
+#     payload = {
+#         "message": commit_message,
+#         "content": encoded_content,
+#         "branch": "main"
+#     }
+#     if sha:
+#         payload["sha"] = sha
 
-    # Upload the file
-    r = requests.put(url, headers=headers, json=payload)
+#     # Upload the file
+#     r = requests.put(url, headers=headers, json=payload)
 
-    # Handle response
-    if r.status_code in [200, 201]:
-        return "Upload successful!"
-    else:
-        return f"Upload failed: {r.status_code} - {r.text}"
+#     # Handle response
+#     if r.status_code in [200, 201]:
+#         return "Upload successful!"
+#     else:
+#         return f"Upload failed: {r.status_code} - {r.text}"
