@@ -3,8 +3,7 @@ import urllib3
 import streamlit as st
 import pandas as pd
 import warnings
-import base64
-import io
+from sqlalchemy import create_engine
 
 from meteostat import Point, Hourly, units
 from concurrent.futures import ThreadPoolExecutor
@@ -235,7 +234,7 @@ def get_strava_data() -> pd.DataFrame:
         pre_df['year'] = pd.to_datetime(pre_df['start_date_local']).dt.year
         
         #add timestamp
-        pre_df['Refresh Date'] = pd.Timestamp.now().strftime('%Y-%m-%d %I:%M %p')
+        pre_df['refresh_date'] = pd.Timestamp.now(tz='America/New_York').strftime('%Y-%m-%d %I:%M %p')
         
         pre_df.drop(columns=['start_latlng', 'end_latlng', 'start_latitude', 'start_longitude'], inplace=True)
     
@@ -243,77 +242,47 @@ def get_strava_data() -> pd.DataFrame:
         
         return pre_df
     
-
-def upload_dataframe_to_github(df: pd.DataFrame) -> None:
-    '''This function takes the dataframe that is being used on the Streamlit app and commits it to Github to be used the next time
-    the app is loaded
+def get_data_from_database() -> pd.DataFrame:
+    '''This function calls the supabase table that holds the Strava API data
     
-    Args:
-        df (DataFrame): Dataframe being used in the Streamlit app'''
-    # Save DataFrame to a binary buffer as a pickle
-    buffer = io.BytesIO()
-    df.to_pickle(buffer)
-    buffer.seek(0)  # Go to the beginning of the buffer
+    Returns:
+        df (DataFrame): Dataframe loaded from table'''
+        
+    # Connection string with sslmode=require
+    DATABASE_URL = f'postgresql://postgres:{st.secrets['supabase_password']}@db.rlwosuyzjswobfxwipdr.supabase.co:5432/postgres'
 
-    # Encode the binary content to base64 as required by GitHub API
-    encoded_content = base64.b64encode(buffer.read()).decode()
+    # Add connect_args to enforce SSL
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"sslmode": "require"}
+    )
 
-    # GitHub API URL for creating/updating a file
-    url = f"https://api.github.com/repos/tjlaporte1/tom_runs_the_world/contents/data/full_data_backup.pkl"
-
-    # Headers including authentication
-    headers = {
-        "Authorization": f"token {st.secrets['github_token']}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-
-    # Check if the file already exists to get its SHA (needed for updates)
-    r = requests.get(url, headers=headers)
-    sha = r.json().get('sha') if r.status_code == 200 else None
+    df = pd.read_sql("SELECT * FROM tom_runs_the_world.tdata_fact", engine)
     
-    commit_message = 'Data updated as of ' + df['Refresh Date'].max()
-
-    # Build the payload
-    payload = {
-        "message": commit_message,
-        "content": encoded_content,
-        "branch": "main"
-    }
-    if sha:
-        payload["sha"] = sha
-
-    # Upload the file
-    r = requests.put(url, headers=headers, json=payload)
-
-    # Handle response
-    if r.status_code in [200, 201]:
-        return "Upload successful!"
-    else:
-        return f"Upload failed: {r.status_code} - {r.text}"
+    return df
 
 @st.cache_data()
 def load_data() -> pd.DataFrame:
     
     '''This function loads the dataframe from the session state. It then corrects the data types.
     
-    Returns: DataFrame: Strave dataframe'''
+    Returns: DataFrame: Strava dataframe'''
     
     df = pd.DataFrame(st.session_state.strava_data)
     
     # convert moving_time and elapsed time to H% M% S% format
-    # df['moving_time'] = pd.to_timedelta(df['moving_time'])
-    # df['elapsed_time'] = pd.to_timedelta(df['elapsed_time'])
+    df['moving_time'] = pd.to_timedelta(df['moving_time'])
+    df['elapsed_time'] = pd.to_timedelta(df['elapsed_time'])
     
-    # # convert start_date and start_date_local to datetime
-    # df['start_date'] = pd.to_datetime(pd.to_datetime(df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
-    # df['start_date_local'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+    # convert start_date and start_date_local to datetime
+    df['start_date'] = pd.to_datetime(pd.to_datetime(df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+    df['start_date_local'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
     
-    # # add start time for analysis and in am/pm format
-    # df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.time
-    # df['start_time_local_12h'] = pd.to_datetime(df['start_date_local']).dt.strftime("%I:%M %p")
-
-    # # add month year
-    # df['month_year'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m'))
+    # add start time for analysis and in am/pm format
+    df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.time
+    df['start_time_local_12h'] = pd.to_datetime(df['start_date_local']).dt.strftime("%I:%M %p")
+    
+    df['refresh_date'] = df['refresh_date'].dt.strftime('%Y-%m-%d %I:%M %p')
     
     return df
 
@@ -406,3 +375,50 @@ def convert_timedelta(td: pd.Timedelta) -> str:
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     return f"{hours} hrs {minutes} min"
+
+def upload_dataframe_to_github(df: pd.DataFrame) -> None:
+    '''This function takes the dataframe that is being used on the Streamlit app and commits it to Github to be used the next time
+    the app is loaded
+    
+    Args:
+        df (DataFrame): Dataframe being used in the Streamlit app'''
+    # Save DataFrame to a binary buffer as a pickle
+    buffer = io.BytesIO()
+    df.to_pickle(buffer)
+    buffer.seek(0)  # Go to the beginning of the buffer
+
+    # Encode the binary content to base64 as required by GitHub API
+    encoded_content = base64.b64encode(buffer.read()).decode()
+
+    # GitHub API URL for creating/updating a file
+    url = f"https://api.github.com/repos/tjlaporte1/tom_runs_the_world/contents/data/full_data_backup.pkl"
+
+    # Headers including authentication
+    headers = {
+        "Authorization": f"token {st.secrets['github_token']}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    # Check if the file already exists to get its SHA (needed for updates)
+    r = requests.get(url, headers=headers)
+    sha = r.json().get('sha') if r.status_code == 200 else None
+    
+    commit_message = 'Data updated as of ' + df['Refresh Date'].max()
+
+    # Build the payload
+    payload = {
+        "message": commit_message,
+        "content": encoded_content,
+        "branch": "main"
+    }
+    if sha:
+        payload["sha"] = sha
+
+    # Upload the file
+    r = requests.put(url, headers=headers, json=payload)
+
+    # Handle response
+    if r.status_code in [200, 201]:
+        return "Upload successful!"
+    else:
+        return f"Upload failed: {r.status_code} - {r.text}"

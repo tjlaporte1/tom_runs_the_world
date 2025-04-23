@@ -5,7 +5,7 @@ import functions as fn
 
 # load data
 if 'strava_data' not in st.session_state:
-    st.session_state.strava_data = pd.read_pickle('./data/full_data_backup.pkl')
+    st.session_state.strava_data = fn.get_data_from_database()
 
 sidebar_logo = './images/tom_runs_the_world_sidebar.png'
 title_logo = './images/tom_runs_the_world_title.png'
@@ -21,7 +21,7 @@ if st.button('Refresh Data', help='Refresh data from Strava API'):
 df = fn.load_data()
 
 # max date
-refresh_date = df['Refresh Date'].max()
+refresh_date = df['refresh_date'].max()
 
 # distict activity type list
 highlighted_activities = ['Run', 'Hike', 'Walk', 'Ride']
@@ -44,7 +44,7 @@ rolling_12_months = today - pd.DateOffset(months=12)
 
 ##### STREAMLIT DASHBOARD #####
 # page header
-st.caption('Last Refreshed: ' + refresh_date)
+st.caption('Last Refreshed: ' + str(refresh_date))
 st.caption('Last Activity Date: ' + max_date)
 st.divider()
     
