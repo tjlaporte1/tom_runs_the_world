@@ -10,6 +10,7 @@ sidebar_logo = './images/tom_runs_the_world_sidebar.png'
 title_logo = './images/tom_runs_the_world_title.png'
 st.logo(sidebar_logo)
 
+refresh_date = df['refresh_date'].max()
 max_date = pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %I:%M %p').max()
 
 # distict activity type list
@@ -33,6 +34,8 @@ rolling_12_months = today - pd.DateOffset(months=12)
 with st.container():
     st.image(title_logo)
     st.subheader('Strava Data Analysis')
+    st.page_link('Overview.py', label='Refresh Data', help='Refresh data on Overview tab')
+    st.caption('Last Refreshed: ' + str(refresh_date))
     st.caption('Last Activity Date: ' + max_date)
     st.divider()
 

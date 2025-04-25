@@ -327,7 +327,7 @@ def load_data() -> pd.DataFrame:
     df['start_time_local_24h'] = pd.to_datetime(df['start_date_local']).dt.time
     df['start_time_local_12h'] = pd.to_datetime(df['start_date_local']).dt.strftime("%I:%M %p")
     
-    df['refresh_date'] = df['refresh_date'].dt.strftime('%Y-%m-%d %I:%M %p')
+    df['refresh_date'] = pd.to_datetime(df['refresh_date']).dt.strftime('%Y-%m-%d %I:%M %p')
     
     return df
 

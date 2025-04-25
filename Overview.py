@@ -12,16 +12,25 @@ title_logo = './images/tom_runs_the_world_title.png'
 st.logo(sidebar_logo)   
 st.image(title_logo)
 st.subheader('Strava Data Analysis')
-    
-if st.button('Refresh Data', help='Refresh data from Strava API'):
+
+if st.button('Refresh Data', help='Refresh data from Strava API. This may take a minute or two.'):
     refreshed_df = fn.get_strava_data()
     st.session_state.strava_data = refreshed_df
     fn.send_data_to_database(refreshed_df)
+    st.cache_data.clear()
 
 df = fn.load_data()
 
 # max date
 refresh_date = df['refresh_date'].max()
+
+refresh_age = pd.Timestamp.now(tz='America/New_York') - pd.to_datetime(refresh_date).tz_localize('America/New_York')
+if refresh_age.days < 7:
+    st.success("Data is under one week old. You're in good shape!")
+elif refresh_age.days >= 7 and refresh_age.days <=14:
+    st.warning('Data is over one week old. Refreshing is recommended.')
+else:
+    st.error('Data is over two weeks old. Please refresh.')
 
 # distict activity type list
 highlighted_activities = ['Run', 'Hike', 'Walk', 'Ride']
