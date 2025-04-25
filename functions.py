@@ -3,8 +3,8 @@ import urllib3
 import streamlit as st
 import pandas as pd
 import warnings
-from sqlalchemy import create_engine
-from sqlalchemy import text
+import numpy as np
+import supabase as sb
 
 from meteostat import Point, Hourly, units
 from concurrent.futures import ThreadPoolExecutor
@@ -249,18 +249,25 @@ def get_data_from_database() -> pd.DataFrame:
     Returns:
         df (DataFrame): Dataframe loaded from table'''
         
-    # Connection string with sslmode=require
-    DATABASE_URL = f'postgresql+psycopg2://postgres:{st.secrets['supabase_password']}@db.rlwosuyzjswobfxwipdr.supabase.co:5432/postgres'
+    url = st.secrets['supabase_url']
+    key = st.secrets['supabase_secret']
 
-    # Add connect_args to enforce SSL
-    engine = create_engine(
-        DATABASE_URL,
-        pool_size=5,
-        max_overflow=0,
-        connect_args={"sslmode": "require"}
-    )
+    supabase = sb.create_client(url, key)
 
-    df = pd.read_sql("SELECT * FROM tom_runs_the_world.tdata_fact", engine)
+    # get all data from the table
+    response = supabase.table("tom_runs_the_world").select("*").execute()
+    df = pd.DataFrame(response.data)
+    
+    # convert timedeltas
+    df['moving_time'] = pd.to_timedelta(df['moving_time'])
+    df['elapsed_time'] = pd.to_timedelta(df['elapsed_time'])
+    # convert time object
+    df['start_time_local_24h'] = pd.to_datetime(df['start_time_local_24h']).dt.time
+    # convert datetime
+    df['start_date'] = pd.to_datetime(pd.to_datetime(df['start_date']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+    df['start_date_local'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
+    df['monthly_date'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m'))
+    df['month_year'] = pd.to_datetime(pd.to_datetime(df['start_date_local']).dt.strftime('%Y-%m'))
     
     return df
 
@@ -269,23 +276,35 @@ def send_data_to_database(df: pd.DataFrame) -> None:
     
     Args:
         df (DataFrame): DataFrame to send to the table'''
-        
-    # Connection string with sslmode=require
-    DATABASE_URL = f'postgresql://postgres:{st.secrets['supabase_password']}@db.rlwosuyzjswobfxwipdr.supabase.co:5432/postgres'
+       
+    # connect to supabase
+    url = st.secrets['supabase_url']
+    key = st.secrets['supabase_secret']
 
-    # Add connect_args to enforce SSL
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"sslmode": "require"}
-    )
+    supabase = sb.create_client(url, key)
     
-    # deletes current table
-    with engine.begin() as conn:
-        # Clear the table without dropping it
-        conn.execute(text('DELETE FROM tom_runs_the_world.tdata_fact'))
+    # Delete all data
+    supabase.table("tom_runs_the_world").delete().neq("id_activity", 0).execute()
 
-    # This will DROP and RECREATE the table (not just delete rows)
-    df.to_sql('tdata_fact', engine, if_exists='append', index=False, schema='tom_runs_the_world')
+    # convert timedeltas
+    df['moving_time'] = df['moving_time'].astype(str)
+    df['elapsed_time'] = df['elapsed_time'].astype(str)
+    # convert time object
+    df['start_time_local_24h'] = df['start_time_local_24h'].apply(lambda x: x.strftime('%H:%M:%S'))
+    # convert datetime
+    df['start_date'] = df['start_date'].apply(lambda x: x.isoformat())
+    df['start_date_local'] = df['start_date_local'].apply(lambda x: x.isoformat())
+    df['monthly_date'] = df['monthly_date'].apply(lambda x: x.isoformat())
+    df['month_year'] = df['month_year'].apply(lambda x: x.isoformat())
+
+    # Replace np.nan with None for any other remaining NaN values
+    df_clean = df.replace({np.nan: None})
+
+    # Convert the cleaned DataFrame to a list of dictionaries
+    records = df_clean.to_dict(orient='records')
+    
+    # insert new data
+    supabase.table("tom_runs_the_world").insert(records).execute()
 
 @st.cache_data()
 def load_data() -> pd.DataFrame:
