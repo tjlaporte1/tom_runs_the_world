@@ -258,6 +258,10 @@ def get_data_from_database() -> pd.DataFrame:
     response = supabase.table("tom_runs_the_world").select("*").execute()
     df = pd.DataFrame(response.data)
     
+    if df.empty:
+        df = get_strava_data()
+        send_data_to_database(df)
+    
     # convert timedeltas
     df['moving_time'] = pd.to_timedelta(df['moving_time'])
     df['elapsed_time'] = pd.to_timedelta(df['elapsed_time'])
