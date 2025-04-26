@@ -62,6 +62,7 @@ st.header('Activity Data')
 selected_columns = [
     'start_date_local',
     'start_time_local_12h',
+    'type',
     'name_activity',
     'brand_name',
     'name_gear',
@@ -77,6 +78,7 @@ selected_columns = [
     'suffer_score',
     'temp',
     'rhum',
+    'start_time_local_24h_hour',
     'weekday'
 ]
 
@@ -91,6 +93,7 @@ column_config = {
     
     'start_date_local': st.column_config.DateColumn('Date'),
     'start_time_local_12h': st.column_config.TextColumn('Start Time'),
+    'type': st.column_config.TextColumn('Activity Type'),
     'name_activity': st.column_config.TextColumn('Activity Name'),
     'brand_name': st.column_config.TextColumn('Brand Name'),
     'name_gear': st.column_config.TextColumn('Gear'),
@@ -106,6 +109,7 @@ column_config = {
     'suffer_score': st.column_config.NumberColumn('Relative Effort', help='Metric that quantifies the cardiovascular work done during an activity'),
     'temp': st.column_config.NumberColumn('Temperature (°F)'),
     'rhum': st.column_config.NumberColumn('Relative Humidity (%)', format="%.0f%%"),
+    'start_time_local_24h_hour': st.column_config.NumberColumn('Start Hour (24h)'),
     'weekday': st.column_config.TextColumn('Weekday')
     
 }
