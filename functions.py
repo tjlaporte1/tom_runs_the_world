@@ -79,11 +79,11 @@ def get_strava_data() -> pd.DataFrame:
         # get all activities data
         activities = get_activities_data()
         
-        if activities.empty:
+        if activities.empty: 
             
             status.update(label='Cannot refresh. Data loaded from backup!', state='complete', expanded=False)
             
-            return pd.read_pickle('./data/full_data_backup.pkl')
+            return get_data_from_database()
         
         # convert meters to miles
         activities.distance = (activities.distance / 1609.34).round(2)
