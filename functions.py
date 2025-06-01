@@ -300,12 +300,6 @@ def send_data_to_database(df: pd.DataFrame) -> None:
     df['start_date_local'] = df['start_date_local'].apply(lambda x: x.isoformat())
     df['monthly_date'] = df['monthly_date'].apply(lambda x: x.isoformat())
     df['month_year'] = df['month_year'].apply(lambda x: x.isoformat())
-    
-    # Ensure integer columns are properly cast to int (remove .0)
-    int_columns = ['id_activity']  # Add any other integer columns here
-    for col in int_columns:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
 
     # Replace np.nan with None for any other remaining NaN values
     df_clean = df.replace({np.nan: None})
