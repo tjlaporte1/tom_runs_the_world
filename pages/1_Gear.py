@@ -182,21 +182,21 @@ with tab_heart:
         fig = px.box(temp_df, x='Gear', y='max_heartrate', labels={'max_heartrate': 'Max Heart Rate'}, points='all')
         st.plotly_chart(fig)
         
-with tab_effort:
+# with tab_effort:
     
-    with st.container():
+#     with st.container():
         
-        st.caption('Relative Effort: Metric that quantifies the cardiovascular work done during an activity')
+#         st.caption('Relative Effort: Metric that quantifies the cardiovascular work done during an activity')
         
-        st.subheader('Realtive Effort By Gear')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
-        fig = px.box(temp_df, x='Gear', y='suffer_score', labels={'suffer_score': 'Realtive Effort'}, points='all')
-        st.plotly_chart(fig)
+#         st.subheader('Realtive Effort By Gear')
+#         temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
+#         fig = px.box(temp_df, x='Gear', y='suffer_score', labels={'suffer_score': 'Realtive Effort'}, points='all')
+#         st.plotly_chart(fig)
 
-        st.subheader('Relative Effort By Gear By Month')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(avg_suffer_score=('suffer_score', 'mean')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear', 'avg_suffer_score': 'Avg Relative Effort'})
-        temp_df['Avg Relative Effort'] = temp_df['Avg Relative Effort'].round(2)
-        st.line_chart(temp_df, x='Month', y='Avg Relative Effort', y_label='Avg Relative Effort', color='Gear')
+#         st.subheader('Relative Effort By Gear By Month')
+#         temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'name_gear'], sort=False).agg(avg_suffer_score=('suffer_score', 'mean')).reset_index().rename(columns={'month_year': 'Month', 'name_gear': 'Gear', 'avg_suffer_score': 'Avg Relative Effort'})
+#         temp_df['Avg Relative Effort'] = temp_df['Avg Relative Effort'].round(2)
+#         st.line_chart(temp_df, x='Month', y='Avg Relative Effort', y_label='Avg Relative Effort', color='Gear')
 
 st.divider()
 # created gear dataframe
@@ -212,8 +212,8 @@ temp_df = df.groupby(['brand_name', 'name_gear', 'retired']).agg(
     Max_Speed=('max_speed', 'max'),
     Avg_Heart_Rate=('average_heartrate', 'mean'),
     Max_Heart_Rate=('max_heartrate', 'max'),
-    Avg_Relative_Effort=('suffer_score', 'mean'),
-    Max_Relative_Effort=('suffer_score', 'max'),
+    # Avg_Relative_Effort=('suffer_score', 'mean'),
+    # Max_Relative_Effort=('suffer_score', 'max'),
     First_Activity_Date=('start_date_local', 'min'),
     Last_Activity_Date=('start_date_local', 'max')).reset_index().sort_values(by=['retired', 'Last_Activity_Date'],
                                                                               ascending=[True, False]).round(2)

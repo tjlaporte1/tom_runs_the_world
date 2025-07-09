@@ -129,20 +129,20 @@ with tab_heart:
         fig = px.box(temp_df, x='month_year', y='max_heartrate', labels={'month_year': 'Month', 'max_heartrate': 'Max Heart Rate'}, points='all')
         st.plotly_chart(fig)
         
-with tab_effort:
+# with tab_effort:
     
-    with st.container(border=True):
+#     with st.container(border=True):
         
-        st.header('Avg Relative Effort')
+#         st.header('Avg Relative Effort')
         
-        st.divider()
+#         st.divider()
         
-        st.subheader('Avg Relative Effort By Month By Activity Type')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type']).agg(Avg_Relative_Effort=('suffer_score', 'mean')).reset_index().rename(columns={'month_year': 'Month', 'type': 'Activity Type', 'Avg_Relative_Effort': 'Avg Relative Effort'})
-        temp_df['Avg Relative Effort'] = temp_df['Avg Relative Effort'].round(2)
-        st.line_chart(temp_df, x='Month', y='Avg Relative Effort', color='Activity Type')
+#         st.subheader('Avg Relative Effort By Month By Activity Type')
+#         temp_df = fn.df_query_builder(df, year_selection, locals()).sort_values(by='start_date_local').groupby(['month_year', 'type']).agg(Avg_Relative_Effort=('suffer_score', 'mean')).reset_index().rename(columns={'month_year': 'Month', 'type': 'Activity Type', 'Avg_Relative_Effort': 'Avg Relative Effort'})
+#         temp_df['Avg Relative Effort'] = temp_df['Avg Relative Effort'].round(2)
+#         st.line_chart(temp_df, x='Month', y='Avg Relative Effort', color='Activity Type')
         
-        st.subheader('Avg Relative Effort By Month (Boxplot)')
-        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
-        fig = px.box(temp_df, x='month_year', y='suffer_score', labels={'month_year': 'Month', 'suffer_score': 'Avg Relative Effort'}, points='all')
-        st.plotly_chart(fig)
+#         st.subheader('Avg Relative Effort By Month (Boxplot)')
+#         temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'name_gear': 'Gear', 'brand_name': 'Gear Brand'})
+#         fig = px.box(temp_df, x='month_year', y='suffer_score', labels={'month_year': 'Month', 'suffer_score': 'Avg Relative Effort'}, points='all')
+#         st.plotly_chart(fig)
