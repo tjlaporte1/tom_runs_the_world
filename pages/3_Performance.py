@@ -59,7 +59,7 @@ with st.sidebar:
 st.header('Performance')
 
 # tabs
-tab_speed, tab_heart, tab_effort = st.tabs(['Speed', 'Heart Rate', 'Relative Effort'])
+tab_speed, tab_heart, tab_effort = st.tabs(['Speed', 'Heart Rate', 'Relative Effort [Retired]'])
         
 with tab_speed:
     

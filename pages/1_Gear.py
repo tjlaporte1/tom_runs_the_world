@@ -59,7 +59,7 @@ with st.sidebar:
 st.header('Gear')
 
 # tabs
-tab_act, tab_dist, tab_ele, tab_time, tab_speed, tab_heart, tab_effort = st.tabs(['Activities', 'Distance', 'Elevation', 'Time', 'Speed', 'Heart Rate', 'Relative Effort'])
+tab_act, tab_dist, tab_ele, tab_time, tab_speed, tab_heart, tab_effort = st.tabs(['Activities', 'Distance', 'Elevation', 'Time', 'Speed', 'Heart Rate', 'Relative Effort [Retired]'])
 
 with tab_act:
     
