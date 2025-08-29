@@ -1,3 +1,6 @@
 login.py
 secrets.toml
 __pycache__/
+.devcontainer/
+.DS_Store
+test.ipynb

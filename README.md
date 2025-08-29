@@ -11,7 +11,7 @@ This Python project receives data from the Strava API and builds a web app using
 
 ## Streamlit App
 
-[View the final result](tom-runs-the-world.streamlit.app)
+[View the final result](https://tom-runs-the-world.streamlit.app)
 
 ---
 
