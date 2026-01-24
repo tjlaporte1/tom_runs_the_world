@@ -212,7 +212,7 @@ def get_strava_data() -> pd.DataFrame:
         pre_df['start_date_local'] = pd.to_datetime(pd.to_datetime(pre_df['start_date_local']).dt.strftime('%Y-%m-%d %H:%M:%S'))
 
         # add start time for analysis and in am/pm format
-        pre_df['start_time_local_24h'] = pd.to_datetime(pre_df['start_date_local']).dt.time
+        pre_df['start_time_local_24h'] = pd.to_datetime(pre_df['start_date_local'])
         pre_df['start_time_local_24h_hour'] = pd.to_datetime(pre_df['start_date_local']).dt.round('H').dt.hour
         pre_df['start_time_local_12h'] = pd.to_datetime(pre_df['start_date_local']).dt.strftime("%I:%M %p")
 
