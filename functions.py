@@ -56,24 +56,39 @@ def get_strava_data() -> pd.DataFrame:
             
             st.write('Fetching Activities...')
             
-            while new_results:
-                # requests one page at a time (200 results)
-                get_activities = requests.get(activities_url, headers=header, params={'per_page': 200, 'page': page}).json()
+            for page in range(1, 21):
+                try:
+                    response = requests.get(
+                        activities_url,
+                        headers=header,
+                        params={'per_page': 200, 'page': page},
+                        timeout=30,
+                    )
+                    response.raise_for_status()
+                    get_activities = response.json()
+                except Exception as exc:
+                    print(f"Strava request failed: {exc}")
+                    return pd.DataFrame()
+
                 # feedback
                 print(f"Fetching page {page}")
-                print(f"Number of activities fetched: {len(get_activities)}")
-                # if there are no results, the loop will stop
-                new_results = get_activities
-                # add the results to the data list
-                data.extend(get_activities)
-                # increment the page number
-                page += 1
 
-                if page > 20:
-                    print('Stopping after 20 pages to avoid excessive API calls.')
-                    
-                    return pd.DataFrame()
-                
+                if isinstance(get_activities, dict) and 'errors' in get_activities:
+                    print(f"Strava API error: {get_activities['errors']}")
+                    break
+
+                if not isinstance(get_activities, list):
+                    print(f"Unexpected Strava response format: {type(get_activities).__name__}")
+                    break
+
+                print(f"Number of activities fetched: {len(get_activities)}")
+
+                if not get_activities:
+                    break
+
+                data.extend(get_activities)
+
+            print('Stopping after 20 pages to avoid excessive API calls.')
             return pd.json_normalize(data)
               
         # get all activities data
@@ -83,7 +98,11 @@ def get_strava_data() -> pd.DataFrame:
             
             status.update(label='Cannot refresh. Data loaded from backup!', state='complete', expanded=False)
             
-            return get_data_from_database()
+            try:
+                return get_data_from_database()
+            except Exception as exc:
+                print(f"Fallback to database failed: {exc}")
+                return pd.DataFrame()
         
         # convert meters to miles
         activities.distance = (activities.distance / 1609.34).round(2)
@@ -238,6 +257,10 @@ def get_strava_data() -> pd.DataFrame:
         pre_df['refresh_date'] = pd.Timestamp.now(tz='America/New_York').strftime('%Y-%m-%d %I:%M %p')
         
         pre_df.drop(columns=['start_latlng', 'end_latlng', 'start_latitude', 'start_longitude'], inplace=True)
+
+        str_columns = [col for col in pre_df.columns if col.endswith('_str')]
+        if str_columns:
+            pre_df = pre_df.drop(columns=str_columns)
     
         status.update(label='Data is Served!', state='complete', expanded=False)
         
@@ -254,13 +277,17 @@ def get_data_from_database() -> pd.DataFrame:
 
     supabase = sb.create_client(url, key)
 
-    # get all data from the table
-    response = supabase.table("tom_runs_the_world").select("*").execute()
-    df = pd.DataFrame(response.data)
+    try:
+        # get all data from the table
+        response = supabase.table("tom_runs_the_world").select("*").execute()
+        df = pd.DataFrame(response.data)
+    except Exception as exc:
+        print(f"Could not load data from Supabase: {exc}")
+        return pd.DataFrame()
     
     if df.empty:
-        df = get_strava_data()
-        send_data_to_database(df)
+        print("Supabase returned no rows; skipping recursive refresh.")
+        return pd.DataFrame()
     
     # convert timedeltas
     df['moving_time'] = pd.to_timedelta(df['moving_time'])
@@ -287,28 +314,47 @@ def send_data_to_database(df: pd.DataFrame) -> None:
 
     supabase = sb.create_client(url, key)
     
-    # Delete all data
-    supabase.table("tom_runs_the_world").delete().neq("id_activity", 0).execute()
+    try:
+        # Delete all data
+        supabase.table("tom_runs_the_world").delete().neq("id_activity", 0).execute()
 
-    # convert timedeltas
-    df['moving_time'] = df['moving_time'].astype(str)
-    df['elapsed_time'] = df['elapsed_time'].astype(str)
-    # convert time object
-    df['start_time_local_24h'] = df['start_time_local_24h'].apply(lambda x: x.strftime('%H:%M:%S'))
-    # convert datetime
-    df['start_date'] = df['start_date'].apply(lambda x: x.isoformat())
-    df['start_date_local'] = df['start_date_local'].apply(lambda x: x.isoformat())
-    df['monthly_date'] = df['monthly_date'].apply(lambda x: x.isoformat())
-    df['month_year'] = df['month_year'].apply(lambda x: x.isoformat())
+        # convert timedeltas
+        df['moving_time'] = df['moving_time'].astype(str)
+        df['elapsed_time'] = df['elapsed_time'].astype(str)
+        # convert time object
+        df['start_time_local_24h'] = df['start_time_local_24h'].apply(lambda x: x.strftime('%H:%M:%S'))
+        # convert datetime
+        df['start_date'] = df['start_date'].apply(lambda x: x.isoformat())
+        df['start_date_local'] = df['start_date_local'].apply(lambda x: x.isoformat())
+        df['monthly_date'] = df['monthly_date'].apply(lambda x: x.isoformat())
+        df['month_year'] = df['month_year'].apply(lambda x: x.isoformat())
 
-    # Replace np.nan with None for any other remaining NaN values
-    df_clean = df.replace({np.nan: None})
+        # Replace np.nan with None for any other remaining NaN values
+        df_clean = df.replace({np.nan: None})
 
-    # Convert the cleaned DataFrame to a list of dictionaries
-    records = df_clean.to_dict(orient='records')
-    
-    # insert new data
-    supabase.table("tom_runs_the_world").insert(records).execute()
+        if 'athlete.id_str' in df_clean.columns:
+            df_clean = df_clean.rename(columns={'athlete.id_str': 'athlete.id'})
+
+        df_clean = df_clean.drop(columns=[col for col in df_clean.columns if col.endswith('_str')], errors='ignore')
+
+        # Only include columns that exist in the Supabase table schema.
+        # This avoids insert failures for nested columns such as athlete.id_str.
+        try:
+            schema_response = supabase.table("tom_runs_the_world").select("*").limit(0).execute()
+            available_columns = set(schema_response.data[0].keys()) if schema_response.data else set()
+        except Exception:
+            available_columns = set(df_clean.columns)
+
+        compatible_columns = [col for col in df_clean.columns if col in available_columns]
+        df_for_insert = df_clean[compatible_columns]
+
+        # Convert the cleaned DataFrame to a list of dictionaries
+        records = df_for_insert.to_dict(orient='records')
+        
+        # insert new data
+        supabase.table("tom_runs_the_world").insert(records).execute()
+    except Exception as exc:
+        print(f"Could not send data to Supabase: {exc}")
 
 @st.cache_data()
 def load_data() -> pd.DataFrame:

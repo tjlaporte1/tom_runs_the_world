@@ -58,7 +58,7 @@ with st.sidebar:
     
 st.header('Weather')
     
-tab_act, tab_dist, tab_ele, tab_time, tab_speed, tab_heart, tab_effort = st.tabs(['Activities', 'Distance', 'Elevation', 'Time', 'Speed', 'Heart Rate', 'Relative Effort [Retired]'])
+tab_act, tab_dist, tab_ele, tab_time, tab_speed, tab_heart, tab_effort = st.tabs(['Activities', 'Distance', 'Elevation', 'Time', 'Speed', 'Heart Rate', 'Relative Effort'])
 
 with tab_act:
     
@@ -130,14 +130,14 @@ with tab_heart:
         temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'temp': 'Temperature (°F)', 'rhum': 'Relative Humidity (%)', 'type': 'Activity Type', 'average_heartrate': 'Avg Heart Rate'})
         st.scatter_chart(temp_df, x='Relative Humidity (%)', y='Avg Heart Rate', color='Activity Type')
         
-# with tab_effort:
+with tab_effort:
     
-#     with st.container():
+    with st.container():
         
-#         st.subheader('Relative Effort By Temperature')
-#         temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'temp': 'Temperature (°F)', 'rhum': 'Relative Humidity (%)', 'type': 'Activity Type', 'suffer_score': 'Relative Effort'})
-#         st.scatter_chart(temp_df, x='Temperature (°F)', y='Relative Effort', color='Activity Type')
+        st.subheader('Relative Effort By Temperature')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'temp': 'Temperature (°F)', 'rhum': 'Relative Humidity (%)', 'type': 'Activity Type', 'suffer_score': 'Relative Effort'})
+        st.scatter_chart(temp_df, x='Temperature (°F)', y='Relative Effort', color='Activity Type')
         
-#         st.subheader('Relative Effort By Relative Humidity')
-#         temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'temp': 'Temperature (°F)', 'rhum': 'Relative Humidity (%)', 'type': 'Activity Type', 'suffer_score': 'Relative Effort'})
-#         st.scatter_chart(temp_df, x='Relative Humidity (%)', y='Relative Effort', color='Activity Type')
+        st.subheader('Relative Effort By Relative Humidity')
+        temp_df = fn.df_query_builder(df, year_selection, locals()).rename(columns={'temp': 'Temperature (°F)', 'rhum': 'Relative Humidity (%)', 'type': 'Activity Type', 'suffer_score': 'Relative Effort'})
+        st.scatter_chart(temp_df, x='Relative Humidity (%)', y='Relative Effort', color='Activity Type')
